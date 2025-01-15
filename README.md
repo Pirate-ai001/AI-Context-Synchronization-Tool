@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Context Sync Tool** is a file monitoring utility designed to track changes within a project directory, execute Git diffs, and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments and tracking any updates that occur across a corrosponding repository.
+The **Context Sync Tool** is a file monitoring utility designed to track changes within a project directory, execute Git diffs, and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments and tracking any updates that occur across a corrosponding repository, this tool has not yet been tested/integrated with any ai model.
 
 ## Features
 
@@ -37,8 +37,7 @@ The **Context Sync Tool** is a file monitoring utility designed to track changes
 
 To use the **Context Sync Tool**, run the following command from the **Context Sync Tool** folder:
 
-```bash
-node contextSyncTool.js
+node contextSyncTool.js or pnpm run monitor
 This will initialize the file monitoring process. The tool will monitor the directory for changes, and on detecting any changes, it will execute the Git diff command and log the relevant changes.
 
 Logs
