@@ -41,7 +41,7 @@ To use the **Context Sync Tool**, run the following command from the **Context S
 
 node contextSyncTool.js or pnpm run monitor
 
-This will initialize the file monitoring process. The tool will monitor the directory for changes, and on detecting any changes, it will execute the Git diff command and log the relevant changes.
+This will initialize the file monitoring process. The tool will monitor the directory for changes (u will likely need to change the path to your own project root directory path in configuration before the tool will work as intended) and on detecting any changes, it will execute the Git diff command and log the relevant changes.
 
 Logs
 
