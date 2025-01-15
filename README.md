@@ -40,9 +40,11 @@ e.g. cd C:/Users/Admin/Desktop/Context_Sync_Tool
 To use the **Context Sync Tool**, run the following command from the **Context Sync Tool** folder:
 
 node contextSyncTool.js or pnpm run monitor
+
 This will initialize the file monitoring process. The tool will monitor the directory for changes, and on detecting any changes, it will execute the Git diff command and log the relevant changes.
 
 Logs
+
 Logs will be printed to the terminal or command line in real-time.
 Logs are color-coded for easier reading:
 Green: Information logs
