@@ -31,6 +31,10 @@ e.g. cd C:/Users/Admin/Desktop/Context_Sync_Tool
     pnpm install
     ```
 
+    ```bash
+    pnpm add chokidar
+    ```
+
 ## Usage
 
 To use the **Context Sync Tool**, run the following command from the **Context Sync Tool** folder:
