@@ -53,9 +53,9 @@ Red: Error logs
 Git Diff Command
 The tool executes the following Git diff command to detect changes:
 
-bash
-Copy code
+ ```bash
 git diff --name-only
+```
 This command returns the list of files that have been modified, added, or removed in the repository.
 
 Idle Status
