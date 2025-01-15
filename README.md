@@ -96,8 +96,11 @@ This log output helps developers track the exact changes detected by the tool an
 Key Considerations
 
 Performance: The tool runs continuously in the background to monitor file changes. For large projects, ensure that the list of ignored files is comprehensive to avoid unnecessary processing.
+
 Security: Ensure that the tool is not monitoring sensitive or confidential files, especially if integrated into production environments.
 Extensions: The tool can be easily extended to perform additional actions on file changes, such as running tests, triggering builds, or notifying team members.
+
+Contributing: if you have forked this and configured it to run with your chosen AI Chatbot and want to contribute then please get in touch, the ideal scenario is to have seperate working and configured branches for each available AI model.
 
 License
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
