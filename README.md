@@ -8,10 +8,10 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
 
 - Monitors changes in the project directory using `chokidar`.
 - Executes a Git diff command to track changes when files are modified.
-- Excludes certain files/folders from being watched (e.g., `node_modules`, `.git`, etc.).
+- Excludes certain files/folders from being watched (e.g., `node_modules`, `.git`, etc.)
+- Relational Mapping - Uses config file relational_map to specify files that should be checked as a linked group when triggered as modified/moved/removed
 - Logs activity such as file changes, additions, removals, and errors.
 - Periodically logs the idle status to indicate when the tool is not actively processing.
-- Relational Mapping - Uses config file relational_map to specify files that should be checked as a linked group when triggered as modified/moved/removed
 - Handles `.gitignore` files to exclude ignored files from monitoring.
 
 ## Installation
