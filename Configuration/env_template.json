@@ -1,0 +1,5 @@
+{
+  "monitoring_interval": 5000,
+  "max_context_size": 5000,
+  "model_api_key": "YOUR_API_KEY"
+}
