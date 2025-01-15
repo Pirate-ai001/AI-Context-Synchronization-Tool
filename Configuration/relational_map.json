@@ -1,0 +1,5 @@
+## Maps relational files that require special attention
+{
+  "src/components/sidebar.tsx": ["src/layout.tsx", "src/app.tsx", "tailwind.config.js"],
+  "tailwind.config.js": ["src/components/**/*.tsx"]
+}

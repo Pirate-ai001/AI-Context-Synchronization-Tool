@@ -6,22 +6,62 @@ import fs from 'fs';
 const projectRoot = path.resolve(process.cwd());
 const gitignorePath = path.resolve(projectRoot, '.gitignore');
 const gitCommand = 'git diff --name-only';
+const relationalMapPath = 'C:\\Users\\Ben\\Desktop\\Coding\\AIProject01\\Branches\\dev\\Administrative_Actions\\Other_Tools\\Context_Sync_Tool\\Configuration\\relational_map.json';
 
 let isIdle = true;
 let isStatusLogged = false;
-let firstIdle = true; // Flag for first idle log
-let watcherStatus = 'idle'; // Track the state of the watcher
+let firstIdle = true;
+let watcherStatus = 'idle';
+let relationalMap = null;
 
 const log = (type, message) => {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [${type.toUpperCase()}]: ${message}`;
     console.log(
-        type === 'info' ? '\x1b[32m%s\x1b[0m' : // Green for info
-        type === 'warn' ? '\x1b[33m%s\x1b[0m' : // Yellow for warnings
-        type === 'error' ? '\x1b[31m%s\x1b[0m' : // Red for errors
+        type === 'info' ? '\x1b[32m%s\x1b[0m' :
+        type === 'warn' ? '\x1b[33m%s\x1b[0m' :
+        type === 'error' ? '\x1b[31m%s\x1b[0m' :
         '%s',
         formattedMessage
     );
+};
+
+const loadRelationalMap = () => {
+    try {
+        if (fs.existsSync(relationalMapPath)) {
+            log('info', `Loading relational map from ${relationalMapPath}`);
+            const fileContent = fs.readFileSync(relationalMapPath, 'utf8');
+            
+            // Find the first '{' character and parse from there
+            const jsonStartIndex = fileContent.indexOf('{');
+            if (jsonStartIndex === -1) {
+                throw new Error('No JSON object found in file');
+            }
+            
+            const jsonContent = fileContent.substring(jsonStartIndex);
+            relationalMap = JSON.parse(jsonContent);
+            log('info', 'Relational map loaded successfully');
+        } else {
+            log('warn', `Relational map not found at ${relationalMapPath}`);
+        }
+    } catch (error) {
+        log('error', `Failed to load relational map: ${error.message}`);
+    }
+};
+
+const processRelatedFiles = (changedFile) => {
+    if (!relationalMap) return [];
+
+    const relatedFiles = [];
+    // Check if the changed file has any relations defined
+    const fileRelations = relationalMap[changedFile];
+    
+    if (fileRelations) {
+        log('info', `Found relations for ${changedFile}`);
+        relatedFiles.push(...fileRelations);
+    }
+
+    return relatedFiles;
 };
 
 const readGitIgnore = () => {
@@ -60,30 +100,37 @@ const getGitDiff = () => {
 
 const monitorFiles = async () => {
     log('info', `Initializing monitoring process in ${projectRoot}`);
+    loadRelationalMap();  // Load the relational map at startup
     const gitIgnorePatterns = readGitIgnore();
 
     log('info', 'Setting up file watcher...');
     const watcher = chokidar.watch(projectRoot, {
         persistent: true,
         ignored: [
-            /node_modules/, // Exclude node_modules from being watched
-            /\.git/,         // Exclude .git files
-            /\.vs/,          // Exclude .vs (Visual Studio) files
-            /\.(db|log)$/    // Exclude certain extensions
+            /node_modules/,
+            /\.git/,
+            /\.vs/,
+            /\.(db|log)$/
         ]
     });
 
     watcher.on('change', async (filePath) => {
         watcherStatus = 'active';
-        log('info', `File changed: ${filePath}`);
+        const relativePath = path.relative(projectRoot, filePath);
+        log('info', `File changed: ${relativePath}`);
 
-        if (!isIgnored(filePath, gitIgnorePatterns)) {
+        if (!isIgnored(relativePath, gitIgnorePatterns)) {
             isIdle = false;
-            log('info', `Detected change in file: ${filePath}`);
-
+            
             try {
                 const changedFiles = await getGitDiff();
                 log('info', `Files detected with changes: ${changedFiles.join(', ')}`);
+
+                // Process related files
+                const relatedFiles = processRelatedFiles(relativePath);
+                if (relatedFiles.length > 0) {
+                    log('info', `Related files that may need attention: ${relatedFiles.join(', ')}`);
+                }
             } catch (err) {
                 log('error', `Failed to get Git diff: ${err.message}`);
             }
@@ -93,6 +140,15 @@ const monitorFiles = async () => {
                 log('info', `Status: [IDLE] (no tasks in progress, monitoring for changes).`);
                 firstIdle = false;
             }
+        }
+    });
+
+    // Watch the relational map file for changes
+    watcher.add(relationalMapPath);
+    watcher.on('change', (filePath) => {
+        if (filePath === relationalMapPath) {
+            log('info', 'Relational map file changed, reloading...');
+            loadRelationalMap();
         }
     });
 
@@ -116,7 +172,6 @@ const monitorFiles = async () => {
         watcherStatus = 'error';
     });
 
-    // Periodically log status when idle
     setInterval(() => {
         if (isIdle && !isStatusLogged) {
             log('info', `Status: [IDLE] (no tasks in progress, monitoring for changes).`);
@@ -124,9 +179,9 @@ const monitorFiles = async () => {
         } else if (!isIdle) {
             isStatusLogged = false;
         }
-    }, 300000); // 5-minute interval
+    }, 300000);
 };
 
 // Startup message
-log('info', `Starting monitoring tool...`);
+log('info', 'Starting monitoring tool with relational map support...');
 monitorFiles();
