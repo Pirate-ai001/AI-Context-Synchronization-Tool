@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs, and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT ect) and tracking any updates that occur across a corrosponding repository, this tool has not yet been tested/integrated with any ai model.
+The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs, and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT ect) and tracking any updates that occur across a corrosponding repository, this tool has not yet been tested/integrated with any AI model.
 
 ## Features
 
@@ -96,8 +96,11 @@ This log output helps developers track the exact changes detected by the tool an
 Key Considerations
 
 Performance: The tool runs continuously in the background to monitor file changes. For large projects, ensure that the list of ignored files is comprehensive to avoid unnecessary processing.
+
 Security: Ensure that the tool is not monitoring sensitive or confidential files, especially if integrated into production environments.
 Extensions: The tool can be easily extended to perform additional actions on file changes, such as running tests, triggering builds, or notifying team members.
+
+Contributing: if you have forked this and configured it to run with your chosen AI Chatbot and want to contribute then please get in touch, the ideal scenario is to have seperate working and configured branches for each available AI model.
 
 License
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
