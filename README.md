@@ -20,12 +20,10 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
     ```bash
     git clone <repository-url>
     ```
+2. unzip your files into directory named Context_Sync_Tool
 
-2. Navigate to the **Context Sync Tool** folder:
-
-   e.g.
-    cd C:/Users/Ben/Desktop/Coding/AIProject01/Branches/dev/Administrative_Actions/Other_Tools/Context_Sync_Tool
-    ```
+3. Navigate to the **Context Sync Tool** folder:
+e.g. cd C:/Users/Admin/Desktop/Context_Sync_Tool
 
 3. Install required dependencies:
 
