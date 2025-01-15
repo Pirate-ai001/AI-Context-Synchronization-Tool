@@ -22,7 +22,7 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
     ```
 2. unzip your files into directory named Context_Sync_Tool
 
-3. Navigate to the **Context Sync Tool** folder:
+3. in terminal Navigate to the **Context Sync Tool** folder:
 e.g. cd C:/Users/Admin/Desktop/Context_Sync_Tool
 
 3. Install required dependencies:
