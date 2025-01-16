@@ -1,108 +1,70 @@
 # Context Sync Tool
 
-## Overview
-
-The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT ect) and tracking any updates that occur across a corrosponding local folder &/or Git Repository, this tool has not yet been tested/integrated with any AI model.
+The **Context Sync Tool** is designed to streamline collaboration with AI in coding projects. It helps to monitor project files for changes, track related file dependencies, and provide a dynamic context to AI models to improve the collaboration process.
 
 ## Features
 
-- Monitors changes in the project directory using `chokidar`.
-- Executes a Git diff command to track changes when files are modified.
-- Excludes certain files/folders from being watched (e.g., `node_modules`, `.git`, etc.)
-- Relational Mapping - Uses config file relational_map to specify files that should be checked as a linked group when triggered as modified/moved/removed
-- Logs activity such as file changes, additions, removals, and errors.
-- Periodically logs the idle status to indicate when the tool is not actively processing.
-- Handles `.gitignore` files to exclude ignored files from monitoring.
+- **File Monitoring**: Monitors file changes in the project and tracks the relevant files using a relational map.
+- **Relational Map Support**: Integrates a relational map to track interdependencies between files and ensure the AI gets the right context.
+- **Git Diff Integration**: Utilizes `git diff` to detect changes and identify affected files.
+- **Error Logging**: Includes detailed error handling and logging to help troubleshoot any issues.
+- **Automatic Relational Map Reload**: Monitors changes to the relational map file and updates the AI context accordingly.
 
-## Installation
+## Project Structure
 
-1. Clone the repository or navigate to the relevant branch where the tool is located.
+The tool is structured into the following directories:
+
+- `Configuration/`: Contains configuration files such as the relational map.
+- `docs/`: Documentation and troubleshooting guides.
+- `scripts/`: Contains the main scripts for monitoring and syncing contexts.
+
+### Example Directory Layout:
+
+/Context_Sync_Tool ├── Configuration │ └── relational_map.json ├── docs │ └── README.md ├── scripts │ └── file_monitoring.js └── LICENSE.txt
+
+
+## Setup Instructions
+
+1. Clone the repository:
 
     ```bash
-    git clone <repository-url>
+    git clone <repo_url>
+    cd Context_Sync_Tool
     ```
-2. unzip your files into directory named Context_Sync_Tool
 
-3. in terminal Navigate to the **Context Sync Tool** folder:
-e.g. cd C:/Users/Admin/Desktop/Context_Sync_Tool
-
-3. Install required dependencies:
+2. Install dependencies:
 
     ```bash
     pnpm install
     ```
 
+3. Run the file monitoring script:
+
     ```bash
-    pnpm add chokidar
+    pnpm run monitor
     ```
 
 ## Usage
 
-To use the **Context Sync Tool**, run the following command from the **Context Sync Tool** folder:
+### Monitoring Files
 
-node contextSyncTool.js or pnpm run monitor
+- The tool will start monitoring the project's files and log any changes detected.
+- If a file is changed, the tool will check if there are any related files that need attention, based on the relational map.
 
-This will initialize the file monitoring process. The tool will monitor the directory for changes (u will likely need to change the path to your own project root directory path in configuration before the tool will work as intended) and on detecting any changes, it will execute the Git diff command and log the relevant changes.
+### Relational Map
 
-Logs
+- The **relational map** defines the relationships between files and their dependencies.
+- The tool loads the relational map and updates the AI context dynamically whenever a file change is detected.
 
-Logs will be printed to the terminal or command line in real-time.
-Logs are color-coded for easier reading:
-Green: Information logs
-Yellow: Warning logs
-Red: Error logs
-Git Diff Command
-The tool executes the following Git diff command to detect changes:
+### Error Handling and Troubleshooting
 
- ```bash
-git diff --name-only
-```
-This command returns the list of files that have been modified, added, or removed in the repository.
+- The tool logs important events, including errors, file changes, and related file processing, into the console for easy troubleshooting.
+- Ensure that the `relational_map.json` file is properly formatted and located in the **Configuration** folder. If there are issues loading it, check the logs for more details.
 
-Idle Status
-If no changes are detected for 5 minutes, the tool will log an idle status indicating that it is monitoring for changes but no activity is being processed.
+## Contributions
 
-Troubleshooting
-Common Issues
+If you'd like to contribute to this project, please fork the repository, create a new branch, and submit a pull request with your proposed changes.
 
-1. Git diff fails
-If you encounter an error related to the Git diff command, ensure that:
-You have Git installed and available in your system PATH.
-Your working directory is correctly set to the project root.
+## License
 
-2. No files detected
-If the tool is not detecting changes, verify the following:
-Check if the files you are modifying are not ignored by .gitignore.
-Ensure that the file changes are saved before the tool processes them.
-
-3. Watcher errors
-If the watcher encounters issues, ensure that:
-The required dependencies are correctly installed.
-The path to the directory is accessible and there are no permissions issues.
-Maintenance and Support
-
-For more information on maintaining this tool or extending its functionality, refer to the tool documentation in the maintenance directory.
-For assistance or support, contact the development team or check the project’s issue tracker.
-
-Example Log Output
-When changes are detected, logs will be printed to the terminal:
-
-[2025-01-15T12:34:56.789Z] [INFO]: File changed: /path/to/changed/file.js
-[2025-01-15T12:34:56.789Z] [INFO]: Detected change in file: /path/to/changed/file.js
-[2025-01-15T12:34:56.789Z] [INFO]: Executing Git diff command: "git diff --name-only"
-[2025-01-15T12:34:56.789Z] [INFO]: Git diff returned 3 changes.
-[2025-01-15T12:34:56.789Z] [INFO]: Files detected with changes: /path/to/changed/file1.js, /path/to/changed/file2.js
-This log output helps developers track the exact changes detected by the tool and any actions that follow.
-
-Key Considerations
-
-Performance: The tool runs continuously in the background to monitor file changes. For large projects, ensure that the list of ignored files is comprehensive to avoid unnecessary processing.
-
-Security: Ensure that the tool is not monitoring sensitive or confidential files, especially if integrated into production environments.
-Extensions: The tool can be easily extended to perform additional actions on file changes, such as running tests, triggering builds, or notifying team members.
-
-Contributing: if you have forked this and configured it to run with your chosen AI Chatbot and want to contribute then please get in touch, the ideal scenario is to have seperate working and configured branches for each available AI model.
-
-License
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
-You may not use this project for commercial purposes. For more details, refer to the LICENSE file.
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
