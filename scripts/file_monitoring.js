@@ -14,28 +14,55 @@ let firstIdle = true;
 let watcherStatus = 'idle';
 let relationalMap = null;
 
+// Log utility function
 const log = (type, message) => {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [${type.toUpperCase()}]: ${message}`;
-    console.log(
-        type === 'info' ? '\x1b[32m%s\x1b[0m' :
-        type === 'warn' ? '\x1b[33m%s\x1b[0m' :
-        type === 'error' ? '\x1b[31m%s\x1b[0m' :
-        '%s',
-        formattedMessage
-    );
+
+    const colorMap = {
+        info: '\x1b[32m%s\x1b[0m',
+        warn: '\x1b[33m%s\x1b[0m',
+        error: '\x1b[31m%s\x1b[0m',
+        default: '%s'
+    };
+    
+    console.log(colorMap[type] || colorMap.default, formattedMessage);
 };
 
+// Read .gitignore file and return patterns to ignore
+const readGitIgnore = () => {
+    try {
+        if (fs.existsSync(gitignorePath)) {
+            log('info', `.gitignore found at ${gitignorePath}`);
+            return fs.readFileSync(gitignorePath, 'utf8').split(/\r?\n/).filter(Boolean);
+        } else {
+            log('warn', `.gitignore not found. All files will be monitored.`);
+            return [];
+        }
+    } catch (error) {
+        log('error', `Error reading .gitignore: ${error.message}`);
+        return [];
+    }
+};
+
+// Check if a file is ignored based on .gitignore patterns
+const isIgnored = (filePath, gitIgnorePatterns) => {
+    return gitIgnorePatterns.some(pattern => {
+        const regex = new RegExp(`^${pattern.replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
+        return regex.test(filePath);
+    });
+};
+
+// Load relational map from a JSON file, with error handling
 const loadRelationalMap = () => {
     try {
         if (fs.existsSync(relationalMapPath)) {
             log('info', `Loading relational map from ${relationalMapPath}`);
             const fileContent = fs.readFileSync(relationalMapPath, 'utf8');
-            
-            // Find the first '{' character and parse from there
             const jsonStartIndex = fileContent.indexOf('{');
+            
             if (jsonStartIndex === -1) {
-                throw new Error('No JSON object found in file');
+                throw new Error('Invalid relational map format. No JSON object found.');
             }
             
             const jsonContent = fileContent.substring(jsonStartIndex);
@@ -49,45 +76,25 @@ const loadRelationalMap = () => {
     }
 };
 
+// Process related files based on the relational map
 const processRelatedFiles = (changedFile) => {
     if (!relationalMap) return [];
 
-    const relatedFiles = [];
-    // Check if the changed file has any relations defined
-    const fileRelations = relationalMap[changedFile];
-    
-    if (fileRelations) {
-        log('info', `Found relations for ${changedFile}`);
-        relatedFiles.push(...fileRelations);
+    const relatedFiles = relationalMap[changedFile] || [];
+    if (relatedFiles.length) {
+        log('info', `Found related files for ${changedFile}: ${relatedFiles.join(', ')}`);
     }
 
     return relatedFiles;
 };
 
-const readGitIgnore = () => {
-    if (fs.existsSync(gitignorePath)) {
-        log('info', `.gitignore found at ${gitignorePath}`);
-        return fs.readFileSync(gitignorePath, 'utf8').split(/\r?\n/).filter(Boolean);
-    } else {
-        log('warn', `.gitignore not found. All files will be monitored.`);
-        return [];
-    }
-};
-
-const isIgnored = (filePath, gitIgnorePatterns) => {
-    return gitIgnorePatterns.some(pattern => {
-        const regex = new RegExp(
-            `^${pattern.replace(/\*/g, '.*').replace(/\?/g, '.')}$`
-        );
-        return regex.test(filePath);
-    });
-};
-
+// Execute the Git diff command to get modified files
 const getGitDiff = () => {
     return new Promise((resolve, reject) => {
         log('info', `Executing Git diff command: "${gitCommand}"`);
         exec(gitCommand, { cwd: projectRoot }, (error, stdout) => {
             if (error) {
+                log('error', `Git diff command failed: ${error.message}`);
                 reject(error);
             } else {
                 const changes = stdout.split(/\r?\n/).filter(Boolean);
@@ -98,11 +105,13 @@ const getGitDiff = () => {
     });
 };
 
+// Initialize the file monitoring process
 const monitorFiles = async () => {
     log('info', `Initializing monitoring process in ${projectRoot}`);
     loadRelationalMap();  // Load the relational map at startup
     const gitIgnorePatterns = readGitIgnore();
 
+    // Set up the file watcher
     log('info', 'Setting up file watcher...');
     const watcher = chokidar.watch(projectRoot, {
         persistent: true,
@@ -114,6 +123,7 @@ const monitorFiles = async () => {
         ]
     });
 
+    // Handle file change events
     watcher.on('change', async (filePath) => {
         watcherStatus = 'active';
         const relativePath = path.relative(projectRoot, filePath);
@@ -152,6 +162,7 @@ const monitorFiles = async () => {
         }
     });
 
+    // Watch for new files or removed files
     watcher.on('add', (filePath) => {
         watcherStatus = 'active';
         log('info', `File added: ${filePath}`);
@@ -162,16 +173,7 @@ const monitorFiles = async () => {
         log('info', `File removed: ${filePath}`);
     });
 
-    watcher.on('ready', () => {
-        log('info', 'Watcher is now active and monitoring the directory.');
-        watcherStatus = 'active';
-    });
-
-    watcher.on('error', (error) => {
-        log('error', `Watcher error: ${error.message}`);
-        watcherStatus = 'error';
-    });
-
+    // Monitor idle status
     setInterval(() => {
         if (isIdle && !isStatusLogged) {
             log('info', `Status: [IDLE] (no tasks in progress, monitoring for changes).`);
@@ -182,6 +184,6 @@ const monitorFiles = async () => {
     }, 300000);
 };
 
-// Startup message
+// Startup message and initiation
 log('info', 'Starting monitoring tool with relational map support...');
 monitorFiles();
