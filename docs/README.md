@@ -149,6 +149,56 @@ The tool uses a JSON5 configuration file (`config.json5`) with enhanced features
 
 **Note**: Ensure to use `/` (forward slashes) in the paths, even on Windows systems.
 
+### File Relationship Tracking
+
+The tool provides an advanced **Relational Map** feature that allows you to define sophisticated file relationships using two matching strategies:
+
+#### Exact File Mapping
+Define direct, one-to-one relationships between specific files:
+
+```json5
+{
+  relationalMap: {
+    "src/components/sidebar.tsx": [
+      "src/layout.tsx",
+      "src/app.tsx"
+    ]
+  }
+}
+```
+
+#### Glob Pattern Matching
+Use wildcard patterns to match multiple files dynamically:
+
+```json5
+{
+  relationalMap: {
+    "tailwind.config.js": [
+      "src/components/**/*.tsx"
+    ],
+    "src/styles/**/*.css": [
+      "src/components/**/*.tsx"
+    ]
+  }
+}
+```
+
+#### Key Features of Related Files Tracking:
+- Supports precise file path matching
+- Implements advanced glob-style pattern recognition
+- Automatically removes duplicate related file entries
+- Provides comprehensive debug logging of file relationships
+- Enables flexible configuration for complex project structures
+
+#### How Related Files Work
+When a file is modified:
+1. The tool instantly checks for exact file matches in the relational map
+2. Applies sophisticated glob pattern matching to discover related files
+3. Generates detailed debug logs about discovered file relationships
+4. Can trigger context updates or notifications for interconnected files
+
+**Tip**: Enable `debugMode: true` in the configuration to receive detailed insights about file relationship detection and matching processes.
+
 ## Gitignore Files
 The tool uses two separate .gitignore files:
 

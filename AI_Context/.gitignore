@@ -1,0 +1,12 @@
+# Ignore all files in history
+history/*
+
+# Don't ignore templates
+!templates/
+!templates/*
+
+# Don't ignore .gitignore
+!.gitignore
+
+# Keep directory structure
+!*/

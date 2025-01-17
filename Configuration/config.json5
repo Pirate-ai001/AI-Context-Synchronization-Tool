@@ -1,18 +1,64 @@
-// Configuration file
+// Configuration file for Context Sync Tool
 {
-  "watchAllFiles": true, // Set to false to enable relational map mode
-  "debounceTime": 100,  // Milliseconds to wait before processing changes
-  "ignoredPatterns": [  // Patterns to ignore (in addition to .gitignore)
+  // Main watch settings
+  watchAllFiles: true,
+  debugMode: false,
+  debounceTime: 300,
+
+  // Git configuration
+  gitConfig: {
+    enabled: true,
+    repositoryPath: "path/to/your/repo",
+    branch: "main",
+    showGitStatus: true
+  },
+
+  // Patterns to ignore
+  ignoredPatterns: [
     "node_modules/**",
     "dist/**",
-    ".git/**",
-    "**/*.log"
+    "*.log"
   ],
-  "relationalMap": {
+
+  // Watch directories
+  watchDirectories: [
+    "./src/**/*"
+  ],
+
+  // AI Output Configuration
+  aiOutputConfig: {
+    enabled: true,
+    models: {
+      claude: {
+        enabled: true,
+        outputPath: "./AI_Context/claude/context.txt",
+        format: "markdown",
+        maxTokens: 100000,
+        includeFileContent: true,
+        headerTemplate: "## Project Changes\nThe following files have been modified:\n"
+      },
+      chatgpt: {
+        enabled: true,
+        outputPath: "./AI_Context/chatgpt/context.json",
+        format: "json",
+        maxTokens: 50000,
+        includeFileContent: false,
+        headerTemplate: "Project change summary:"
+      }
+    },
+    globalSettings: {
+      keepHistory: true,
+      historyPath: "./AI_Context/history",
+      maxHistoryFiles: 10,
+      createMissingDirectories: true
+    }
+  },
+
+  // Relational map for file dependencies
+  relationalMap: {
     "src/components/sidebar.tsx": [
       "src/layout.tsx",
-      "src/app.tsx",
-      "tailwind.config.js"
+      "src/app.tsx"
     ],
     "tailwind.config.js": [
       "src/components/**/*.tsx"

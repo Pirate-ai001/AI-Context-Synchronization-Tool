@@ -1,0 +1,28 @@
+{
+  "projectContext": {
+    "timestamp": "{{timestamp}}",
+    "branch": "{{branch}}",
+    "changes": [
+      {{#each changes}}
+      {
+        "file": "{{file}}",
+        "status": "{{status}}",
+        "type": "{{type}}"
+      }
+      {{/each}}
+    ],
+    "relatedFiles": [
+      {{#each relatedFiles}}
+      {
+        "file": "{{file}}",
+        "relationship": "{{relationship}}"
+      }
+      {{/each}}
+    ],
+    "gitStatus": {
+      "addedFiles": {{addedCount}},
+      "modifiedFiles": {{modifiedCount}},
+      "deletedFiles": {{deletedCount}}
+    }
+  }
+}
