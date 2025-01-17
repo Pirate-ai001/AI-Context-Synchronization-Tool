@@ -14,10 +14,6 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
 2. Install dependencies:
     ```bash
     pnpm install
-    ```
-    
-    Or install individual packages:
-    ```bash
     pnpm add chokidar
     pnpm add chalk
     pnpm add json5
