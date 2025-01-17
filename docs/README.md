@@ -3,6 +3,18 @@
 ## Overview
 The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT etc) and tracking any updates that occur across a corresponding local folder &/or Git Repository.
 
+## Features
+- **Intelligent File Monitoring**: Advanced file system monitoring with debouncing and stability thresholds
+- **Relational Map Support**: Track interdependencies between files using a flexible mapping system
+- **Git Integration**: Utilizes git diff to track changes effectively
+- **Smart Status Logging**: Shows detailed git status including added, modified, and deleted files
+- **Error Handling**: Includes detailed error handling and logging to help troubleshoot any issues
+- **Dynamic Configuration**: JSON5-based configuration with hot-reload support
+- **Pattern Matching**: Support for glob patterns in file matching
+- **Debug Mode**: Optional detailed logging for troubleshooting
+- **Performance Optimized**: Efficient file watching with debouncing and caching
+- **Idle Status Tracking**: Monitors and reports system idle state
+
 ## Installation
 
 1. Clone the repository:
@@ -65,18 +77,6 @@ The dummy project is a pre-configured example project included with the tool tha
    - Use dummy project as a template
    - Copy and modify configurations
    - Adjust paths and patterns for your needs
-
-## Features
-- **Intelligent File Monitoring**: Advanced file system monitoring with debouncing and stability thresholds
-- **Relational Map Support**: Track interdependencies between files using a flexible mapping system
-- **Git Integration**: Utilizes git diff to track changes effectively
-- **Smart Status Logging**: Shows detailed git status including added, modified, and deleted files
-- **Error Handling**: Includes detailed error handling and logging to help troubleshoot any issues
-- **Dynamic Configuration**: JSON5-based configuration with hot-reload support
-- **Pattern Matching**: Support for glob patterns in file matching
-- **Debug Mode**: Optional detailed logging for troubleshooting
-- **Performance Optimized**: Efficient file watching with debouncing and caching
-- **Idle Status Tracking**: Monitors and reports system idle state
 
 ## Working with Claude
 
