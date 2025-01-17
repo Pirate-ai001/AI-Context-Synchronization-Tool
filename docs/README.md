@@ -3,6 +3,32 @@
 ## Overview
 The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT etc) and tracking any updates that occur across a corresponding local folder &/or Git Repository.
 
+## Installation
+
+1. Clone the repository:
+    ```bash
+    git clone <repo_url>
+    cd Context_Sync_Tool
+    ```
+
+2. Install dependencies:
+    ```bash
+    pnpm install
+    ```
+    
+    Or install individual packages:
+    ```bash
+    pnpm add chokidar
+    pnpm add chalk
+    pnpm add json5
+    pnpm add lodash
+    ```
+
+3. Run the monitoring script:
+    ```bash
+    pnpm run monitor
+    ```
+
 ## Understanding the Dummy Project
 
 ### What is the Dummy Project?
@@ -72,32 +98,6 @@ Context_Sync_Tool/
 ├── .gitignore             # Tool-specific ignores
 └── package.json           # Dependencies and scripts
 ```
-
-## Installation
-
-1. Clone the repository:
-    ```bash
-    git clone <repo_url>
-    cd Context_Sync_Tool
-    ```
-
-2. Install dependencies:
-    ```bash
-    pnpm install
-    ```
-    
-    Or install individual packages:
-    ```bash
-    pnpm add chokidar
-    pnpm add chalk
-    pnpm add json5
-    pnpm add lodash
-    ```
-
-3. Run the monitoring script:
-    ```bash
-    pnpm run monitor
-    ```
 
 ## Configuration
 
