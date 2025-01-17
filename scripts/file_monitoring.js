@@ -1,189 +1,222 @@
 import chokidar from 'chokidar';
-import path from 'path';
-import { exec } from 'child_process';
+import chalk from 'chalk';
 import fs from 'fs';
+import path from 'path';
+import JSON5 from 'json5';
 
-const projectRoot = path.resolve(process.cwd());
-const gitignorePath = path.resolve(projectRoot, '.gitignore');
-const gitCommand = 'git diff --name-only';
-const relationalMapPath = 'C:\\Users\\Ben\\Desktop\\Coding\\AIProject01\\Branches\\dev\\Administrative_Actions\\Other_Tools\\Context_Sync_Tool\\Configuration\\relational_map.json';
+// Normalize __dirname for Windows paths
+const __dirname = path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1');
 
-let isIdle = true;
-let isStatusLogged = false;
-let firstIdle = true;
-let watcherStatus = 'idle';
-let relationalMap = null;
+// Resolve paths
+const CONFIG_FILE_PATH = path.resolve(path.join(__dirname, '..', 'Configuration', 'config.json5'));
+const GITIGNORE_PATH = path.resolve(process.cwd(), '.gitignore');
 
-// Log utility function
-const log = (type, message) => {
-    const timestamp = new Date().toISOString();
-    const formattedMessage = `[${timestamp}] [${type.toUpperCase()}]: ${message}`;
+// Default configuration with comments
+const defaultConfigContent = `// Configuration file
+{
+  "watchAllFiles": true, // Set to false to enable relational map mode
+  "debounceTime": 100,  // Milliseconds to wait before processing changes
+  "ignoredPatterns": [  // Patterns to ignore (in addition to .gitignore)
+    "node_modules/**",
+    "dist/**",
+    ".git/**",
+    "**/*.log"
+  ],
+  "relationalMap": {
+    "src/components/sidebar.tsx": [
+      "src/layout.tsx",
+      "src/app.tsx",
+      "tailwind.config.js"
+    ],
+    "tailwind.config.js": [
+      "src/components/**/*.tsx"
+    ]
+  }
+}`;
 
-    const colorMap = {
-        info: '\x1b[32m%s\x1b[0m',
-        warn: '\x1b[33m%s\x1b[0m',
-        error: '\x1b[31m%s\x1b[0m',
-        default: '%s'
-    };
-    
-    console.log(colorMap[type] || colorMap.default, formattedMessage);
-};
-
-// Read .gitignore file and return patterns to ignore
-const readGitIgnore = () => {
-    try {
-        if (fs.existsSync(gitignorePath)) {
-            log('info', `.gitignore found at ${gitignorePath}`);
-            return fs.readFileSync(gitignorePath, 'utf8').split(/\r?\n/).filter(Boolean);
-        } else {
-            log('warn', `.gitignore not found. All files will be monitored.`);
-            return [];
-        }
-    } catch (error) {
-        log('error', `Error reading .gitignore: ${error.message}`);
-        return [];
+// Function to read .gitignore patterns
+const getGitignorePatterns = () => {
+  try {
+    if (fs.existsSync(GITIGNORE_PATH)) {
+      console.log(chalk.green('Found .gitignore file'));
+      const gitignore = fs.readFileSync(GITIGNORE_PATH, 'utf-8')
+        .split('\n')
+        .filter(line => line && !line.startsWith('#'))
+        .map(pattern => pattern.trim());
+      return gitignore;
     }
+  } catch (err) {
+    console.warn(chalk.yellow(`Warning: Could not read .gitignore: ${err.message}`));
+  }
+  return [];
 };
 
-// Check if a file is ignored based on .gitignore patterns
-const isIgnored = (filePath, gitIgnorePatterns) => {
-    return gitIgnorePatterns.some(pattern => {
-        const regex = new RegExp(`^${pattern.replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
-        return regex.test(filePath);
-    });
+// Ensure the Configuration directory exists
+const configDir = path.join(__dirname, '..', 'Configuration');
+if (!fs.existsSync(configDir)) {
+  try {
+    fs.mkdirSync(configDir, { recursive: true });
+    console.log(chalk.green(`Created missing directory: ${configDir}`));
+  } catch (err) {
+    console.error(chalk.red(`Failed to create Configuration directory: ${err.message}`));
+    process.exit(1);
+  }
+}
+
+// Check if the configuration file exists and create a default if missing
+if (!fs.existsSync(CONFIG_FILE_PATH)) {
+  console.log(chalk.yellow('Creating a default config.json5 file...'));
+  try {
+    fs.writeFileSync(CONFIG_FILE_PATH, defaultConfigContent, 'utf-8');
+    console.log(chalk.green('Default config.json5 file created successfully.'));
+  } catch (err) {
+    console.error(chalk.red(`Failed to create default configuration file: ${err.message}`));
+    process.exit(1);
+  }
+}
+
+// Function to read and parse the configuration file
+const getConfig = () => {
+  try {
+    const data = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
+    return JSON5.parse(data);
+  } catch (err) {
+    console.error(chalk.red(`Failed to read or parse the configuration file: ${err.message}`));
+    process.exit(1);
+  }
 };
 
-// Load relational map from a JSON file, with error handling
-const loadRelationalMap = () => {
-    try {
-        if (fs.existsSync(relationalMapPath)) {
-            log('info', `Loading relational map from ${relationalMapPath}`);
-            const fileContent = fs.readFileSync(relationalMapPath, 'utf8');
-            const jsonStartIndex = fileContent.indexOf('{');
-            
-            if (jsonStartIndex === -1) {
-                throw new Error('Invalid relational map format. No JSON object found.');
-            }
-            
-            const jsonContent = fileContent.substring(jsonStartIndex);
-            relationalMap = JSON.parse(jsonContent);
-            log('info', 'Relational map loaded successfully');
-        } else {
-            log('warn', `Relational map not found at ${relationalMapPath}`);
-        }
-    } catch (error) {
-        log('error', `Failed to load relational map: ${error.message}`);
-    }
+// Function to normalize file paths for consistent matching
+const normalizePath = (filePath) => {
+  return path.normalize(filePath).replace(/\\/g, '/');
 };
 
-// Process related files based on the relational map
-const processRelatedFiles = (changedFile) => {
-    if (!relationalMap) return [];
+// Monitor file changes
+const monitorFiles = () => {
+  const config = getConfig();
+  const watchAllFiles = config.watchAllFiles;
+  const relationalMap = config.relationalMap;
+  const debounceTime = config.debounceTime || 100;
 
-    const relatedFiles = relationalMap[changedFile] || [];
-    if (relatedFiles.length) {
-        log('info', `Found related files for ${changedFile}: ${relatedFiles.join(', ')}`);
-    }
+  // Combine gitignore patterns with configured ignore patterns
+  const gitignorePatterns = getGitignorePatterns();
+  const ignoredPatterns = [
+    ...gitignorePatterns,
+    ...(config.ignoredPatterns || []),
+    /(^|[\/\\])\../ // Ignore dot files
+  ];
 
-    return relatedFiles;
-};
+  let watchPaths;
 
-// Execute the Git diff command to get modified files
-const getGitDiff = () => {
-    return new Promise((resolve, reject) => {
-        log('info', `Executing Git diff command: "${gitCommand}"`);
-        exec(gitCommand, { cwd: projectRoot }, (error, stdout) => {
-            if (error) {
-                log('error', `Git diff command failed: ${error.message}`);
-                reject(error);
-            } else {
-                const changes = stdout.split(/\r?\n/).filter(Boolean);
-                log('info', `Git diff returned ${changes.length} changes.`);
-                resolve(changes);
-            }
+  if (watchAllFiles) {
+    watchPaths = [path.join(process.cwd(), '**/*')]; // Watch all files recursively
+    console.log(chalk.cyan('Monitoring all files in the project directory.'));
+  } else {
+    // Normalize relational map paths
+    const normalizedMap = Object.entries(relationalMap).reduce((acc, [key, value]) => {
+      acc[normalizePath(key)] = value.map(normalizePath);
+      return acc;
+    }, {});
+
+    watchPaths = Array.from(new Set([
+      ...Object.keys(normalizedMap),
+      ...Object.values(normalizedMap).flat()
+    ])).map((p) => path.resolve(process.cwd(), p));
+
+    console.log(chalk.cyan('Monitoring based on the relational map configuration.'));
+  }
+
+  const watcher = chokidar.watch(watchPaths, {
+    persistent: true,
+    ignoreInitial: true,
+    ignored: ignoredPatterns
+  });
+
+  // Debounce handling
+  let changeTimeout = null;
+  const handleChange = (filePath) => {
+    const normalizedPath = normalizePath(path.relative(process.cwd(), filePath));
+    console.log(chalk.green(`File changed: ${normalizedPath}`));
+
+    if (!watchAllFiles) {
+      const relatedFiles = relationalMap[normalizedPath];
+
+      if (relatedFiles && relatedFiles.length > 0) {
+        console.log(chalk.blue('Related files that may need attention:'));
+        relatedFiles.forEach((file) => {
+          console.log(chalk.yellow(`  → ${file}`));
         });
-    });
+      } else {
+        const dependentFiles = Object.entries(relationalMap)
+          .filter(([_, deps]) => deps.some(dep => {
+            if (dep.includes('*')) {
+              const pattern = new RegExp(dep.replace(/\*/g, '.*'));
+              return pattern.test(normalizedPath);
+            }
+            return dep === normalizedPath;
+          }))
+          .map(([key]) => key);
+
+        if (dependentFiles.length > 0) {
+          console.log(chalk.blue('This file is referenced by:'));
+          dependentFiles.forEach((file) => {
+            console.log(chalk.yellow(`  ← ${file}`));
+          });
+        } else {
+          console.log(chalk.gray('No related files found.'));
+        }
+      }
+    }
+  };
+
+  watcher.on('change', (filePath) => {
+    if (changeTimeout) {
+      clearTimeout(changeTimeout);
+    }
+    changeTimeout = setTimeout(() => {
+      handleChange(filePath);
+    }, debounceTime);
+  });
+
+  watcher.on('ready', () => {
+    console.log(chalk.bold('Monitoring file changes...'));
+    console.log(chalk.gray(`Using ${ignoredPatterns.length} ignore patterns`));
+  });
+
+  console.log(chalk.bold('Initializing file monitoring...'));
 };
 
-// Initialize the file monitoring process
-const monitorFiles = async () => {
-    log('info', `Initializing monitoring process in ${projectRoot}`);
-    loadRelationalMap();  // Load the relational map at startup
-    const gitIgnorePatterns = readGitIgnore();
+// Monitor changes to the configuration file itself
+const monitorConfigFile = () => {
+  let configChangeTimeout = null;
+  const watcher = chokidar.watch(CONFIG_FILE_PATH, {
+    persistent: true,
+    ignoreInitial: true
+  });
 
-    // Set up the file watcher
-    log('info', 'Setting up file watcher...');
-    const watcher = chokidar.watch(projectRoot, {
-        persistent: true,
-        ignored: [
-            /node_modules/,
-            /\.git/,
-            /\.vs/,
-            /\.(db|log)$/
-        ]
-    });
-
-    // Handle file change events
-    watcher.on('change', async (filePath) => {
-        watcherStatus = 'active';
-        const relativePath = path.relative(projectRoot, filePath);
-        log('info', `File changed: ${relativePath}`);
-
-        if (!isIgnored(relativePath, gitIgnorePatterns)) {
-            isIdle = false;
-            
-            try {
-                const changedFiles = await getGitDiff();
-                log('info', `Files detected with changes: ${changedFiles.join(', ')}`);
-
-                // Process related files
-                const relatedFiles = processRelatedFiles(relativePath);
-                if (relatedFiles.length > 0) {
-                    log('info', `Related files that may need attention: ${relatedFiles.join(', ')}`);
-                }
-            } catch (err) {
-                log('error', `Failed to get Git diff: ${err.message}`);
-            }
-
-            isIdle = true;
-            if (firstIdle) {
-                log('info', `Status: [IDLE] (no tasks in progress, monitoring for changes).`);
-                firstIdle = false;
-            }
-        }
-    });
-
-    // Watch the relational map file for changes
-    watcher.add(relationalMapPath);
-    watcher.on('change', (filePath) => {
-        if (filePath === relationalMapPath) {
-            log('info', 'Relational map file changed, reloading...');
-            loadRelationalMap();
-        }
-    });
-
-    // Watch for new files or removed files
-    watcher.on('add', (filePath) => {
-        watcherStatus = 'active';
-        log('info', `File added: ${filePath}`);
-    });
-
-    watcher.on('unlink', (filePath) => {
-        watcherStatus = 'active';
-        log('info', `File removed: ${filePath}`);
-    });
-
-    // Monitor idle status
-    setInterval(() => {
-        if (isIdle && !isStatusLogged) {
-            log('info', `Status: [IDLE] (no tasks in progress, monitoring for changes).`);
-            isStatusLogged = true;
-        } else if (!isIdle) {
-            isStatusLogged = false;
-        }
-    }, 300000);
+  watcher.on('change', () => {
+    if (configChangeTimeout) {
+      clearTimeout(configChangeTimeout);
+    }
+    configChangeTimeout = setTimeout(() => {
+      console.log(chalk.magenta('Configuration file changed. Reloading...'));
+      try {
+        const updatedConfig = getConfig();
+        console.log(chalk.green('Configuration successfully reloaded.'));
+        console.log(chalk.cyan('Updated configuration:'), updatedConfig);
+      } catch (err) {
+        console.error(chalk.red(`Failed to reload configuration: ${err.message}`));
+      }
+    }, 100); // Small debounce for config changes
+  });
 };
 
-// Startup message and initiation
-log('info', 'Starting monitoring tool with relational map support...');
-monitorFiles();
+// Start monitoring
+try {
+  console.log(chalk.cyan('Starting file monitoring system...'));
+  monitorFiles();
+  monitorConfigFile();
+} catch (err) {
+  console.error(chalk.red(`Fatal error: ${err.message}`));
+  process.exit(1);
+}

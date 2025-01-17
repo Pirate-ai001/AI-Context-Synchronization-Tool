@@ -1,0 +1,21 @@
+// Configuration file
+{
+  "watchAllFiles": true, // Set to false to enable relational map mode
+  "debounceTime": 100,  // Milliseconds to wait before processing changes
+  "ignoredPatterns": [  // Patterns to ignore (in addition to .gitignore)
+    "node_modules/**",
+    "dist/**",
+    ".git/**",
+    "**/*.log"
+  ],
+  "relationalMap": {
+    "src/components/sidebar.tsx": [
+      "src/layout.tsx",
+      "src/app.tsx",
+      "tailwind.config.js"
+    ],
+    "tailwind.config.js": [
+      "src/components/**/*.tsx"
+    ]
+  }
+}

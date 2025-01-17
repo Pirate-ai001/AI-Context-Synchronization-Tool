@@ -1,0 +1,24 @@
+{
+  "name": "context-sync-tool",
+  "version": "1.0.0",
+  "description": "A tool for syncing context and monitoring files for updates.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "monitor": "node ./scripts/file_monitoring.js",
+    "start": "node ./scripts/index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.4",
+    "chokidar": "^3.6.0",
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-react": "^7.37.4",
+    "globals": "^15.14.0"
+  },
+  "author": "Pirate-ai001",
+  "license": "CC-BY-NC-4.0"
+}

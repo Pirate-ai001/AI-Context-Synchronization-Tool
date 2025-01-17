@@ -1,0 +1,13 @@
+{
+  "name": "dummy-project",
+  "version": "1.0.0",
+  "scripts": {
+    "monitor": "node ./scripts/file_monitoring.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  },
+  "devDependencies": {
+    "fs-extra": "^10.0.0"
+  }
+}

@@ -1,0 +1,5 @@
+## Make sure to use / in your path format
+{
+  "projectRootPath": "./dummy-project", 
+  "relationalMapPath": "./Configuration/relational_map.json"
+}
