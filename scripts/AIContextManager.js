@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 
 class AIContextManager {
     constructor(config, logger) {
@@ -22,7 +22,6 @@ class AIContextManager {
     async ensureDirectories() {
         if (!this.config.globalSettings.createMissingDirectories) return;
 
-        // Create directories for each enabled model
         for (const [modelName, modelConfig] of Object.entries(this.config.models)) {
             if (modelConfig.enabled) {
                 const outputDir = path.dirname(modelConfig.outputPath);
@@ -32,7 +31,6 @@ class AIContextManager {
             }
         }
 
-        // Create history directory if needed
         if (this.config.globalSettings.keepHistory) {
             const historyDir = this.config.globalSettings.historyPath;
             if (!existsSync(historyDir)) {
@@ -41,60 +39,152 @@ class AIContextManager {
         }
     }
 
-    createContextForModel(modelName, changes, relatedFiles) {
+    async getFileContent(filePath) {
+        try {
+            const content = await fs.readFile(filePath, 'utf8');
+            return content;
+        } catch (error) {
+            this.logger.error(`Failed to read file: ${filePath}`, error);
+            return null;
+        }
+    }
+
+    getFileType(filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        const typeMap = {
+            '.js': 'javascript',
+            '.jsx': 'javascript',
+            '.ts': 'typescript',
+            '.tsx': 'typescript',
+            '.py': 'python',
+            '.html': 'html',
+            '.css': 'css',
+            '.json': 'json',
+            '.md': 'markdown'
+        };
+        return typeMap[ext] || 'plaintext';
+    }
+
+    async analyzeChanges(changes) {
+        const analyzedChanges = [];
+        for (const change of changes) {
+            const fileContent = await this.getFileContent(change.file);
+            analyzedChanges.push({
+                ...change,
+                fileType: this.getFileType(change.file),
+                fileContent: fileContent,
+                modifiedElements: await this.analyzeModifiedElements(fileContent, this.getFileType(change.file))
+            });
+        }
+        return analyzedChanges;
+    }
+
+    async analyzeModifiedElements(content, fileType) {
+        // Basic implementation - can be enhanced with proper parsing
+        const elements = [];
+        if (!content) return elements;
+
+        if (fileType === 'javascript' || fileType === 'typescript') {
+            const functionRegex = /function\s+(\w+)|const\s+(\w+)\s*=/g;
+            let match;
+            while ((match = functionRegex.exec(content)) !== null) {
+                elements.push({
+                    name: match[1] || match[2],
+                    purpose: 'Function/Component - Purpose needs manual documentation'
+                });
+            }
+        }
+        return elements;
+    }
+
+    async createContextForModel(modelName, changes, relatedFiles) {
         const modelConfig = this.config.models[modelName];
         if (!modelConfig || !modelConfig.enabled) return;
 
+        const analyzedChanges = await this.analyzeChanges(changes);
+        const analyzedRelatedFiles = await this.analyzeRelatedFiles(relatedFiles);
+
         let context = '';
         if (modelConfig.format === 'markdown') {
-            context = this.createMarkdownContext(modelConfig, changes, relatedFiles);
+            context = await this.createMarkdownContext(modelConfig, analyzedChanges, analyzedRelatedFiles);
         } else if (modelConfig.format === 'json') {
-            context = this.createJSONContext(modelConfig, changes, relatedFiles);
+            context = await this.createJSONContext(modelConfig, analyzedChanges, analyzedRelatedFiles);
         }
 
         return this.writeContext(modelConfig.outputPath, context, modelName);
     }
 
-    createMarkdownContext(modelConfig, changes, relatedFiles) {
-        let context = modelConfig.headerTemplate + '\n\n';
+    async analyzeRelatedFiles(files) {
+        if (!files) return [];
         
-        // Add changed files
-        context += '### Changed Files\n';
-        changes.forEach(change => {
-            context += `- \`${change.file}\` (${change.status})\n`;
-        });
-
-        // Add related files if any
-        if (relatedFiles && relatedFiles.length > 0) {
-            context += '\n### Related Files\n';
-            relatedFiles.forEach(file => {
-                context += `- \`${file}\`\n`;
+        const analyzedFiles = [];
+        for (const file of files) {
+            const content = await this.getFileContent(file);
+            analyzedFiles.push({
+                file,
+                fileType: this.getFileType(file),
+                relevantCode: content ? this.extractRelevantCode(content) : null,
+                relationship: 'Dependency - Relationship needs manual documentation'
             });
         }
-
-        return context;
+        return analyzedFiles;
     }
 
-    createJSONContext(modelConfig, changes, relatedFiles) {
-        const context = {
-            timestamp: new Date().toISOString(),
-            changes: changes.map(change => ({
-                file: change.file,
-                status: change.status
-            })),
-            relatedFiles: relatedFiles || []
-        };
+    extractRelevantCode(content) {
+        // Basic implementation - can be enhanced with better code analysis
+        const lines = content.split('\n');
+        return lines.length > 20 ? lines.slice(0, 20).join('\n') + '\n// ... additional code' : content;
+    }
 
-        return JSON.stringify(context, null, 2);
+    async createMarkdownContext(modelConfig, changes, relatedFiles) {
+        const template = await this.getTemplate(modelConfig);
+        return this.populateTemplate(template, {
+            timestamp: new Date().toISOString(),
+            branch: process.env.GIT_BRANCH || 'unknown',
+            changes,
+            relatedFiles,
+            projectStructure: await this.getProjectStructure(),
+            implementationNotes: 'Implementation details need to be documented',
+            recentChanges: await this.getRecentChanges(),
+            additionalNotes: 'Add any specific notes or context here'
+        });
+    }
+
+    async getProjectStructure() {
+        // Basic implementation - can be enhanced with more detailed structure
+        return 'Project structure analysis needs to be implemented';
+    }
+
+    async getRecentChanges() {
+        // Basic implementation - can be enhanced with git history
+        return 'Recent changes history needs to be implemented';
+    }
+
+    populateTemplate(template, data) {
+        // Basic template population - can be enhanced with a proper template engine
+        let result = template;
+        for (const [key, value] of Object.entries(data)) {
+            const placeholder = `{{${key}}}`;
+            result = result.replace(placeholder, JSON.stringify(value, null, 2));
+        }
+        return result;
+    }
+
+    async getTemplate(modelConfig) {
+        const templatePath = path.join(path.dirname(modelConfig.outputPath), 'templates', 'default.md');
+        try {
+            return await fs.readFile(templatePath, 'utf8');
+        } catch (error) {
+            this.logger.error(`Failed to read template: ${templatePath}`, error);
+            return '# Error: Template not found';
+        }
     }
 
     async writeContext(outputPath, content, modelName) {
         try {
-            // Write current context
             await fs.writeFile(outputPath, content, 'utf8');
             this.logger.info(`Context written for ${modelName}`);
 
-            // Save to history if enabled
             if (this.config.globalSettings.keepHistory) {
                 await this.saveToHistory(content, modelName);
             }
@@ -123,13 +213,11 @@ class AIContextManager {
             const historyDir = this.config.globalSettings.historyPath;
             const files = await fs.readdir(historyDir);
             
-            // Filter files for specific model and sort by date
             const modelFiles = files
                 .filter(file => file.startsWith(`${modelName}_`))
                 .sort()
                 .reverse();
 
-            // Remove excess files
             const maxFiles = this.config.globalSettings.maxHistoryFiles;
             if (modelFiles.length > maxFiles) {
                 const filesToRemove = modelFiles.slice(maxFiles);

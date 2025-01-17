@@ -78,6 +78,118 @@ The dummy project is a pre-configured example project included with the tool tha
 - **Performance Optimized**: Efficient file watching with debouncing and caching
 - **Idle Status Tracking**: Monitors and reports system idle state
 
+## Working with Claude
+
+### Understanding AI Integration
+The tool's primary purpose is to enhance development workflows by maintaining rich, structured context for Claude. Here's how it works:
+
+#### Context Generation and Analysis
+When you make changes to your code, the tool automatically:
+- Captures actual code content with intelligent analysis
+- Creates detailed change summaries
+- Maps file dependencies and relationships
+- Maintains project structure context
+- Formats everything specifically for Claude's understanding
+
+#### Using Generated Context with Claude
+
+1. **Direct Integration**
+   - Find your context file at `./AI_Context/claude/context.txt`
+   - Copy the content into your Claude conversation
+   - Get immediate, context-aware development assistance
+
+2. **Development Workflow Example**
+   ```bash
+   # With tool running:
+   1. Make your code changes
+   2. Tool updates context automatically
+   3. Share context with Claude:
+      "Here's my latest context from the sync tool. Could you:
+       - Review my changes to the auth system?
+       - Suggest any security improvements?
+       - Help write tests for the new features?"
+   4. Get context-aware responses from Claude
+   ```
+
+3. **What to Ask Claude**
+   With this rich context, Claude can help:
+   - Review code changes for issues
+   - Suggest implementation improvements
+   - Identify documentation needs
+   - Recommend test cases
+   - Analyze change impacts
+   - Understand complex dependencies
+
+#### Template Customization
+You can customize how context is presented to AI models:
+
+1. **Available Templates**
+   - Claude template: `./AI_Context/claude/templates/default.md`
+   - ChatGPT template: `./AI_Context/chatgpt/templates/default.json`
+   - Add your own templates for other AI models
+
+2. **Switching Templates**
+   In config.json5, specify your preferred model:
+   ```json5
+   aiOutputConfig: {
+     enabled: true,
+     models: {
+       claude: {
+         enabled: true,
+         outputPath: "./AI_Context/claude/context.txt",
+         format: "markdown"
+       },
+       chatgpt: {
+         enabled: true,
+         outputPath: "./AI_Context/chatgpt/context.json",
+         format: "json"
+       },
+       // Add other AI models here
+       yourModel: {
+         enabled: true,
+         outputPath: "./AI_Context/yourModel/context.txt",
+         format: "your-format"
+       }
+     }
+   }
+   ```
+
+3. **Creating New Templates**
+   - Copy existing templates as starting points
+   - Place new templates in `./AI_Context/[model-name]/templates/`
+   - Update config.json5 to reference your new template
+   - Follow format requirements for your chosen AI model
+
+#### Context History
+- Access previous contexts in `./AI_Context/history`
+- Track project evolution over time
+- Compare different development states
+- Maintain comprehensive change history
+
+#### Best Practices
+1. **Regular Updates**
+   - Commit changes regularly
+   - Use descriptive commit messages
+   - Keep context fresh and relevant
+
+2. **Project Structure**
+   - Maintain clear organization
+   - Define meaningful file relationships
+   - Use consistent naming patterns
+
+3. **Context Verification**
+   - Check context updates after changes
+   - Monitor debug output
+   - Verify relationship tracking
+
+#### Troubleshooting AI Integration
+If Claude seems to misunderstand the context:
+1. Verify context file was updated
+2. Check if relevant files are being tracked
+3. Enable debug mode for detailed logging
+4. Review template configuration
+5. Check relationship mappings
+
 ## Project Structure
 ```
 Context_Sync_Tool/
