@@ -4,7 +4,7 @@
 
 This guide provides detailed instructions for maintaining and troubleshooting the **Context Synchronization Tool**, which integrates Git Diffs and file monitoring to streamline context generation for AI models.
 
-The tool is designed to be adaptable, globally maintainable, and user-friendly, with a focus on minimizing manual intervention and ensuring seamless operation.
+The tool is designed to be adaptable, globally maintainable, and user-friendly, with a focus on minimizing manual intervention and ensuring seamless operation with AI chatbots like Claude and ChatGPT.
 
 ## System Requirements
 
@@ -12,6 +12,8 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
 - pnpm package manager
 - Git installed and configured
 - Sufficient file system permissions
+- Available disk space for logs and caching
+- Internet connection (for package installation)
 
 ## Key Components
 
@@ -19,35 +21,60 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
    - Tracks changes in version-controlled files
    - Dynamically includes related files based on config.json5
    - Uses debounce protection for efficient processing
+   - Monitors git status (added, modified, deleted files)
 
 2. **File Monitoring**:
    - Real-time file change detection with chokidar
    - Smart pattern matching with glob support
    - Configurable ignore patterns
+   - Idle state monitoring
 
 3. **Configuration System**:
    - JSON5-based configuration for enhanced readability
    - Hot-reload support for configuration changes
    - Framework-independent integration
    - Debug mode for detailed logging
+   - Supports custom git repository paths
 
 4. **Performance Optimization**:
    - Efficient file watching with debouncing
    - Optimized git diff execution
    - Smart caching and pattern matching
+   - Path normalization for cross-platform support
 
 ## Maintenance Tasks
 
 ### 1. Configuration Management
+
+#### Initial Setup
+1. Verify configuration file exists:
+   ```bash
+   ls Configuration/config.json5
+   ```
+2. Create from template if missing:
+   ```bash
+   cp Configuration/config.template.json5 Configuration/config.json5
+   ```
 
 #### Updating the Configuration
 1. Navigate to `Configuration/config.json5`
 2. Modify settings as needed:
    ```json5
    {
+     // Basic settings
      "watchAllFiles": false,
      "debugMode": true,
      "debounceTime": 300,
+     
+     // Git configuration
+     "gitConfig": {
+       "enabled": true,
+       "repositoryPath": "path/to/your/repo",
+       "branch": "main",
+       "showGitStatus": true
+     },
+     
+     // Watch directories
      "watchDirectories": [
        "./src/**/*"
      ]
@@ -60,6 +87,7 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
 - Document custom changes
 - Use version control for configurations
 - Regularly review and clean up patterns
+- Test configuration changes in dummy project first
 
 ### 2. System Health Monitoring
 
@@ -72,11 +100,13 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
    - Monitor memory usage
    - Track CPU utilization
    - Review disk space for logs
+   - Check for hung processes
 
 #### Log Management
 - Monitor log files for errors
 - Implement log rotation if needed
 - Clean up old logs periodically
+- Archive important logs
 
 ### 3. Performance Optimization
 
@@ -86,7 +116,9 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
   "ignoredPatterns": [
     "**/node_modules/**",
     "**/.git/**",
-    "**/dist/**"
+    "**/dist/**",
+    "**/*.{log,tmp}",
+    "**/build/**"
   ],
   "watchDirectories": [
     "./src/**/*.{js,tsx,jsx}",
@@ -99,6 +131,7 @@ The tool is designed to be adaptable, globally maintainable, and user-friendly, 
 - Adjust debounce time based on system performance
 - Optimize file watch patterns
 - Use specific glob patterns
+- Monitor memory consumption
 
 ## Troubleshooting
 
@@ -128,47 +161,30 @@ Failed to parse configuration file: invalid character '#' at 1:1
    }
    ```
 
-#### 2. Relational Map Issues
+#### 2. Git Integration Issues
 
-**Symptom**: Related files not being detected
+**Symptom**: Git diff errors or missing changes
 
 **Solutions**:
-1. Verify map structure:
+1. Verify git setup:
+   ```bash
+   git --version
+   git status
+   ```
+2. Check repository path in config:
    ```json5
    {
-     "src/components/sidebar.tsx": [
-       "src/layout.tsx",
-       "src/app.tsx"
-     ]
+     "gitConfig": {
+       "repositoryPath": "correct/path/to/repo"
+     }
    }
    ```
-2. Check path formatting:
-   - Use forward slashes (/)
-   - Use relative paths from project root
-   - Verify glob patterns
-
-#### 3. File Path Resolution Issues
-
-#### 1. Module Import Errors
-
-**Symptom**: Named export errors
-```
-SyntaxError: Named export not found
-```
-
-**Solutions**:
-1. Check dependencies:
+3. Verify branch configuration:
    ```bash
-   pnpm install
-   ```
-2. Verify import syntax:
-   ```javascript
-   // Correct
-   import lodash from 'lodash';
-   const { debounce } = lodash;
+   git branch --list
    ```
 
-#### 2. File Monitoring Issues
+#### 3. File Monitoring Issues
 
 **Symptom**: Missing file changes or excessive CPU usage
 
@@ -183,40 +199,6 @@ SyntaxError: Named export not found
      "debounceTime": 500  // Increase for stability
    }
    ```
-
-#### 3. Git Integration Problems
-
-**Symptom**: Git diff errors or missing changes
-
-**Solutions**:
-1. Verify git setup:
-   ```bash
-   git --version
-   git status
-   ```
-2. Check repository configuration:
-   ```bash
-   git config --list
-   ```
-3. Ensure proper branch setup:
-   ```bash
-   git branch --list
-   ```
-
-#### 4. Performance Issues
-
-**Symptom**: Slow response or high resource usage
-
-**Solutions**:
-1. Enable debug mode for analysis:
-   ```json5
-   {
-     "debugMode": true
-   }
-   ```
-2. Optimize watch patterns
-3. Increase debounce time
-4. Review ignored patterns
 
 ### Debug Mode
 
@@ -251,132 +233,34 @@ Console output colors:
 
 3. **Emergency Shutdown**
    - Use Ctrl+C to stop the process
-   - Check for hanging processes
+   - Check for hanging processes:
+     ```bash
+     # Windows
+     taskkill /F /IM node.exe
+     # Linux
+     pkill -f file_monitoring
+     ```
    - Clear temporary files
 
 ## Advanced Topics
 
 ### Cross-Platform Compatibility
-- Use platform-agnostic paths
+- Use forward slashes (/) in paths
 - Test on multiple operating systems
 - Handle path separators correctly
+- Use relative paths when possible
 
 ### Large Project Optimization
 - Use specific watch patterns
 - Implement chunking for large files
 - Optimize relational mapping
+- Consider using .gitignore for better performance
 
-### Additional Troubleshooting Scenarios
-
-#### Memory Leaks and Resource Issues
-
-**Symptom**: Increasing memory usage over time
-
-**Solutions**:
-1. Check for unclosed file watchers:
-   ```javascript
-   // Proper watcher cleanup
-   process.on('SIGINT', () => {
-     watcher.close();
-     process.exit(0);
-   });
-   ```
-2. Monitor resource usage:
-   ```bash
-   # On Linux
-   top -p $(pgrep -f file_monitoring)
-   
-   # On Windows
-   tasklist | findstr "node"
-   ```
-3. Implement periodic restart schedule if needed
-
-#### Windows-Specific Path Issues
-
-**Symptom**: Path resolution failures on Windows
-
-**Solutions**:
-1. Use path normalization:
-   ```javascript
-   const normalizedPath = path.normalize(filePath).replace(/\\/g, '/');
-   ```
-2. Check path format in config:
-   ```json5
-   {
-     "watchDirectories": [
-       "./src/**/*",  // Good
-       "C:\\src\\**", // Bad
-       "C:/src/**"    // Good
-     ]
-   }
-   ```
-
-#### Multiple Instance Conflicts
-
-**Symptom**: Tool behaving erratically or port conflicts
-
-**Solutions**:
-1. Check for running instances:
-   ```bash
-   # On Linux
-   ps aux | grep file_monitoring
-   
-   # On Windows
-   tasklist | findstr "node"
-   ```
-2. Implement instance locking:
-   - Create lock file on startup
-   - Check for existing lock
-   - Clean up lock on shutdown
-
-#### VSCode Integration Issues
-
-**Symptom**: File changes not detected when saving in VSCode
-
-**Solutions**:
-1. Check VSCode settings:
-   ```json
-   {
-     "files.autoSave": "off",
-     "files.useExperimentalFileWatcher": true
-   }
-   ```
-2. Verify file permissions
-3. Check VSCode's built-in git integration
-
-#### Network Drive Issues
-
-**Symptom**: Slow response or missed events on network drives
-
-**Solutions**:
-1. Adjust polling settings:
-   ```json5
-   {
-     "usePolling": true,
-     "pollingInterval": 1000
-   }
-   ```
-2. Use local cache directory
-3. Implement retry mechanism for network failures
-
-#### Tool Hanging on Exit
-
-**Symptom**: Process doesn't exit cleanly
-
-**Solutions**:
-1. Implement proper shutdown:
-   ```javascript
-   const cleanup = () => {
-     watcher.close();
-     closeLogFiles();
-     clearCache();
-   };
-   
-   process.on('SIGINT', cleanup);
-   process.on('SIGTERM', cleanup);
-   ```
-2. Check for hanging file handles
-3. Implement timeout-based force exit
+### Security Considerations
+- Avoid watching sensitive directories
+- Use appropriate file permissions
+- Keep dependencies updated
+- Validate file paths
 
 ## Support
 
@@ -385,11 +269,12 @@ For additional support:
 2. Review documentation in /docs
 3. Contact maintainers for serious issues
 
-Remember to include when reporting issues:
+When reporting issues, include:
 - Full error messages
 - Configuration file (sanitized)
 - Steps to reproduce
-- System information
-  - Node.js version
+- System information:
+  - Node.js version (`node --version`)
   - Operating system
-  - Package versions
+  - Package versions (`pnpm list`)
+  - Git version (`git --version`)
