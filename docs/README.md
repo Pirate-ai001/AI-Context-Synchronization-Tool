@@ -15,90 +15,6 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
 - **Performance Optimized**: Efficient file watching with debouncing and caching
 - **Idle Status Tracking**: Monitors and reports system idle state
 
-## Prerequisites
-
-Before installing the Context Sync Tool, ensure you have:
-
-1. **Node.js**
-   - Version 16.0.0 or higher
-   - Download from [nodejs.org](https://nodejs.org)
-
-2. **pnpm**
-   - Latest version recommended
-   - Install via npm: `npm install -g pnpm`
-
-3. **Git**
-   - Required for version control features
-   - Download from [git-scm.com](https://git-scm.com)
-
-4. **System Requirements**
-   - Operating System: Windows, macOS, or Linux
-   - Sufficient disk space for monitored projects
-   - Read/write permissions in installation directory
-
-## Installation
-
-1. Clone the repository:
-    ```bash
-    git clone <repo_url>
-    cd Context_Sync_Tool
-    ```
-
-2. Install dependencies:
-    ```bash
-    pnpm install
-    pnpm add chokidar
-    pnpm add chalk
-    pnpm add json5
-    pnpm add lodash
-    ```
-
-3. Run the monitoring script:
-    ```bash
-    pnpm run monitor
-    ```
-	
-## Understanding the Dummy Project
-
-### What is the Dummy Project?
-The dummy project is a pre-configured example project included with the tool that serves multiple purposes:
-
-1. **Learning Environment**: 
-   - Demonstrates how the tool works in a real project structure
-   - Shows correct configuration setup
-   - Provides working examples of file relationships
-
-2. **Testing Ground**:
-   - Allows you to test the tool without risking your own project
-   - Includes common file types and structures
-   - Demonstrates proper gitignore patterns
-
-3. **Configuration Template**:
-   - Contains pre-configured settings you can reference
-   - Shows how to set up file relationships
-   - Provides examples of ignore patterns
-
-### How to Use the Dummy Project
-
-1. **Initial Testing**:
-   ```bash
-   # Start the tool with dummy project
-   pnpm run monitor
-   ```
-   - Make changes to dummy project files
-   - Observe how the tool tracks relationships
-   - Experiment with different file types
-
-2. **Learning from Examples**:
-   - Review the dummy project's structure
-   - Understand the configuration patterns
-   - See how file relationships are defined
-
-3. **Adapting to Your Project**:
-   - Use dummy project as a template
-   - Copy and modify configurations
-   - Adjust paths and patterns for your needs
-
 ## Working with Claude
 
 ### Understanding AI Integration
@@ -186,6 +102,91 @@ You can customize how context is presented to AI models:
 - Track project evolution over time
 - Compare different development states
 - Maintain comprehensive change history
+
+## Prerequisites
+
+Before installing the Context Sync Tool, ensure you have:
+
+1. **Node.js**
+   - Version 16.0.0 or higher
+   - Download from [nodejs.org](https://nodejs.org)
+
+2. **pnpm**
+   - Latest version recommended
+   - Install via npm: `npm install -g pnpm`
+
+3. **Git**
+   - Required for version control features
+   - Download from [git-scm.com](https://git-scm.com)
+
+4. **System Requirements**
+   - Operating System: Windows, macOS, or Linux
+   - Sufficient disk space for monitored projects
+   - Read/write permissions in installation directory
+
+## Installation
+
+1. Clone the repository:
+    ```bash
+    git clone <repo_url>
+    cd Context_Sync_Tool
+    ```
+
+2. Install dependencies:
+    ```bash
+    pnpm install
+    pnpm add chokidar
+    pnpm add chalk
+    pnpm add json5
+    pnpm add lodash
+    ```
+
+3. Run the monitoring script:
+    ```bash
+    pnpm run monitor
+    ```
+	
+## Understanding the Dummy Project
+
+### What is the Dummy Project?
+The dummy project is a pre-configured example project included with the tool that serves multiple purposes:
+
+1. **Learning Environment**: 
+   - Demonstrates how the tool works in a real project structure
+   - Shows correct configuration setup
+   - Provides working examples of file relationships
+
+2. **Testing Ground**:
+   - Allows you to test the tool without risking your own project
+   - Includes common file types and structures
+   - Demonstrates proper gitignore patterns
+
+3. **Configuration Template**:
+   - Contains pre-configured settings you can reference
+   - Shows how to set up file relationships
+   - Provides examples of ignore patterns
+
+### How to Use the Dummy Project
+
+1. **Initial Testing**:
+   ```bash
+   # Start the tool with dummy project
+   pnpm run monitor
+   ```
+   - Make changes to dummy project files
+   - Observe how the tool tracks relationships
+   - Experiment with different file types
+
+2. **Learning from Examples**:
+   - Review the dummy project's structure
+   - Understand the configuration patterns
+   - See how file relationships are defined
+
+3. **Adapting to Your Project**:
+   - Use dummy project as a template
+   - Copy and modify configurations
+   - Adjust paths and patterns for your needs
+
 
 #### Best Practices
 1. **Regular Updates**
