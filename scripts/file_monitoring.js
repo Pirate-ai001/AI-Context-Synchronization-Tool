@@ -1,222 +1,274 @@
 import chokidar from 'chokidar';
 import chalk from 'chalk';
-import fs from 'fs';
+import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import JSON5 from 'json5';
+import lodash from 'lodash';
+import { exec } from 'child_process';
 
-// Normalize __dirname for Windows paths
-const __dirname = path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1');
+const { debounce } = lodash;
+import { promisify } from 'util';
 
-// Resolve paths
-const CONFIG_FILE_PATH = path.resolve(path.join(__dirname, '..', 'Configuration', 'config.json5'));
-const GITIGNORE_PATH = path.resolve(process.cwd(), '.gitignore');
+const execAsync = promisify(exec);
 
-// Default configuration with comments
-const defaultConfigContent = `// Configuration file
-{
-  "watchAllFiles": true, // Set to false to enable relational map mode
-  "debounceTime": 100,  // Milliseconds to wait before processing changes
-  "ignoredPatterns": [  // Patterns to ignore (in addition to .gitignore)
-    "node_modules/**",
-    "dist/**",
-    ".git/**",
-    "**/*.log"
-  ],
-  "relationalMap": {
-    "src/components/sidebar.tsx": [
-      "src/layout.tsx",
-      "src/app.tsx",
-      "tailwind.config.js"
-    ],
-    "tailwind.config.js": [
-      "src/components/**/*.tsx"
+// Constants
+const CONFIG = {
+    DEBOUNCE_TIME: 300,
+    STATUS_CHECK_INTERVAL: 300000,
+    DEFAULT_IGNORED: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/.vs/**',
+        '**/*.log',
+        '**/dist/**',
+        '**/build/**',
+        '**/.cache/**'
     ]
-  }
-}`;
+};
 
-// Function to read .gitignore patterns
-const getGitignorePatterns = () => {
-  try {
-    if (fs.existsSync(GITIGNORE_PATH)) {
-      console.log(chalk.green('Found .gitignore file'));
-      const gitignore = fs.readFileSync(GITIGNORE_PATH, 'utf-8')
-        .split('\n')
-        .filter(line => line && !line.startsWith('#'))
-        .map(pattern => pattern.trim());
-      return gitignore;
+class FileMonitor {
+    constructor() {
+        this.initialize();
     }
-  } catch (err) {
-    console.warn(chalk.yellow(`Warning: Could not read .gitignore: ${err.message}`));
-  }
-  return [];
-};
 
-// Ensure the Configuration directory exists
-const configDir = path.join(__dirname, '..', 'Configuration');
-if (!fs.existsSync(configDir)) {
-  try {
-    fs.mkdirSync(configDir, { recursive: true });
-    console.log(chalk.green(`Created missing directory: ${configDir}`));
-  } catch (err) {
-    console.error(chalk.red(`Failed to create Configuration directory: ${err.message}`));
-    process.exit(1);
-  }
-}
-
-// Check if the configuration file exists and create a default if missing
-if (!fs.existsSync(CONFIG_FILE_PATH)) {
-  console.log(chalk.yellow('Creating a default config.json5 file...'));
-  try {
-    fs.writeFileSync(CONFIG_FILE_PATH, defaultConfigContent, 'utf-8');
-    console.log(chalk.green('Default config.json5 file created successfully.'));
-  } catch (err) {
-    console.error(chalk.red(`Failed to create default configuration file: ${err.message}`));
-    process.exit(1);
-  }
-}
-
-// Function to read and parse the configuration file
-const getConfig = () => {
-  try {
-    const data = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
-    return JSON5.parse(data);
-  } catch (err) {
-    console.error(chalk.red(`Failed to read or parse the configuration file: ${err.message}`));
-    process.exit(1);
-  }
-};
-
-// Function to normalize file paths for consistent matching
-const normalizePath = (filePath) => {
-  return path.normalize(filePath).replace(/\\/g, '/');
-};
-
-// Monitor file changes
-const monitorFiles = () => {
-  const config = getConfig();
-  const watchAllFiles = config.watchAllFiles;
-  const relationalMap = config.relationalMap;
-  const debounceTime = config.debounceTime || 100;
-
-  // Combine gitignore patterns with configured ignore patterns
-  const gitignorePatterns = getGitignorePatterns();
-  const ignoredPatterns = [
-    ...gitignorePatterns,
-    ...(config.ignoredPatterns || []),
-    /(^|[\/\\])\../ // Ignore dot files
-  ];
-
-  let watchPaths;
-
-  if (watchAllFiles) {
-    watchPaths = [path.join(process.cwd(), '**/*')]; // Watch all files recursively
-    console.log(chalk.cyan('Monitoring all files in the project directory.'));
-  } else {
-    // Normalize relational map paths
-    const normalizedMap = Object.entries(relationalMap).reduce((acc, [key, value]) => {
-      acc[normalizePath(key)] = value.map(normalizePath);
-      return acc;
-    }, {});
-
-    watchPaths = Array.from(new Set([
-      ...Object.keys(normalizedMap),
-      ...Object.values(normalizedMap).flat()
-    ])).map((p) => path.resolve(process.cwd(), p));
-
-    console.log(chalk.cyan('Monitoring based on the relational map configuration.'));
-  }
-
-  const watcher = chokidar.watch(watchPaths, {
-    persistent: true,
-    ignoreInitial: true,
-    ignored: ignoredPatterns
-  });
-
-  // Debounce handling
-  let changeTimeout = null;
-  const handleChange = (filePath) => {
-    const normalizedPath = normalizePath(path.relative(process.cwd(), filePath));
-    console.log(chalk.green(`File changed: ${normalizedPath}`));
-
-    if (!watchAllFiles) {
-      const relatedFiles = relationalMap[normalizedPath];
-
-      if (relatedFiles && relatedFiles.length > 0) {
-        console.log(chalk.blue('Related files that may need attention:'));
-        relatedFiles.forEach((file) => {
-          console.log(chalk.yellow(`  → ${file}`));
-        });
-      } else {
-        const dependentFiles = Object.entries(relationalMap)
-          .filter(([_, deps]) => deps.some(dep => {
-            if (dep.includes('*')) {
-              const pattern = new RegExp(dep.replace(/\*/g, '.*'));
-              return pattern.test(normalizedPath);
-            }
-            return dep === normalizedPath;
-          }))
-          .map(([key]) => key);
-
-        if (dependentFiles.length > 0) {
-          console.log(chalk.blue('This file is referenced by:'));
-          dependentFiles.forEach((file) => {
-            console.log(chalk.yellow(`  ← ${file}`));
-          });
-        } else {
-          console.log(chalk.gray('No related files found.'));
+    async initialize() {
+        try {
+            // Initialize core properties
+            this.initializePaths();
+            this.initializeState();
+            
+            // Load configurations
+            await this.ensureConfigDirectory();
+            await this.loadConfigurations();
+            
+            // Start monitoring
+            await this.startMonitoring();
+        } catch (error) {
+            this.logError('Initialization failed', error);
+            process.exit(1);
         }
-      }
     }
-  };
 
-  watcher.on('change', (filePath) => {
-    if (changeTimeout) {
-      clearTimeout(changeTimeout);
+    initializePaths() {
+        this.__dirname = path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1');
+        this.configDir = path.join(this.__dirname, '..', 'Configuration');
+        this.configPath = path.join(this.configDir, 'config.json5');
+        this.gitignorePath = path.resolve(process.cwd(), '.gitignore');
     }
-    changeTimeout = setTimeout(() => {
-      handleChange(filePath);
-    }, debounceTime);
-  });
 
-  watcher.on('ready', () => {
-    console.log(chalk.bold('Monitoring file changes...'));
-    console.log(chalk.gray(`Using ${ignoredPatterns.length} ignore patterns`));
-  });
-
-  console.log(chalk.bold('Initializing file monitoring...'));
-};
-
-// Monitor changes to the configuration file itself
-const monitorConfigFile = () => {
-  let configChangeTimeout = null;
-  const watcher = chokidar.watch(CONFIG_FILE_PATH, {
-    persistent: true,
-    ignoreInitial: true
-  });
-
-  watcher.on('change', () => {
-    if (configChangeTimeout) {
-      clearTimeout(configChangeTimeout);
+    initializeState() {
+        this.isIdle = true;
+        this.watcherStatus = 'idle';
+        this.config = null;
+        this.watcher = null;
+        this.ignoredPatterns = new Set(CONFIG.DEFAULT_IGNORED);
     }
-    configChangeTimeout = setTimeout(() => {
-      console.log(chalk.magenta('Configuration file changed. Reloading...'));
-      try {
-        const updatedConfig = getConfig();
-        console.log(chalk.green('Configuration successfully reloaded.'));
-        console.log(chalk.cyan('Updated configuration:'), updatedConfig);
-      } catch (err) {
-        console.error(chalk.red(`Failed to reload configuration: ${err.message}`));
-      }
-    }, 100); // Small debounce for config changes
-  });
-};
 
-// Start monitoring
+    // Logging Methods
+    logInfo(message) {
+        console.log(chalk.green(`[${new Date().toISOString()}] [INFO]: ${message}`));
+    }
+
+    logWarn(message) {
+        console.log(chalk.yellow(`[${new Date().toISOString()}] [WARN]: ${message}`));
+    }
+
+    logError(message, error = null) {
+        console.error(chalk.red(`[${new Date().toISOString()}] [ERROR]: ${message}`));
+        if (error) {
+            console.error(chalk.red('Details:', error.message));
+            console.error(chalk.gray('Stack:', error.stack));
+        }
+    }
+
+    logDebug(message) {
+        if (this.config?.debugMode) {
+            console.log(chalk.blue(`[${new Date().toISOString()}] [DEBUG]: ${message}`));
+        }
+    }
+
+    // Configuration Management
+    async ensureConfigDirectory() {
+        if (!existsSync(this.configDir)) {
+            await fs.mkdir(this.configDir, { recursive: true });
+            this.logInfo(`Created configuration directory: ${this.configDir}`);
+        }
+    }
+
+    async loadConfigurations() {
+        await this.loadConfig();
+        await this.loadGitignore();
+    }
+
+    async loadConfig() {
+        const defaultConfig = {
+            watchAllFiles: false,
+            debugMode: false,
+            debounceTime: CONFIG.DEBOUNCE_TIME,
+            ignoredPatterns: CONFIG.DEFAULT_IGNORED,
+            relationalMap: {},
+            watchDirectories: ['./src/**/*']
+        };
+
+        try {
+            if (!existsSync(this.configPath)) {
+                await fs.writeFile(
+                    this.configPath, 
+                    JSON5.stringify(defaultConfig, null, 2)
+                );
+                this.logInfo('Created default configuration file');
+            }
+
+            const configContent = await fs.readFile(this.configPath, 'utf8');
+            this.config = JSON5.parse(configContent);
+            this.logInfo('Configuration loaded successfully');
+        } catch (error) {
+            this.logError('Failed to load configuration', error);
+            this.config = defaultConfig;
+        }
+    }
+
+    async loadGitignore() {
+        try {
+            if (existsSync(this.gitignorePath)) {
+                const content = await fs.readFile(this.gitignorePath, 'utf8');
+                const patterns = content
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line && !line.startsWith('#'));
+                
+                patterns.forEach(pattern => this.ignoredPatterns.add(pattern));
+                this.logInfo(`Loaded ${patterns.length} patterns from .gitignore`);
+            }
+        } catch (error) {
+            this.logWarn('Failed to load .gitignore patterns');
+        }
+    }
+
+    // File Monitoring
+    async startMonitoring() {
+        const watchPaths = this.config.watchAllFiles 
+            ? [path.join(process.cwd(), '**/*')]
+            : this.config.watchDirectories;
+
+        this.watcher = chokidar.watch(watchPaths, {
+            ignored: Array.from(this.ignoredPatterns),
+            persistent: true,
+            ignoreInitial: true,
+            awaitWriteFinish: {
+                stabilityThreshold: 300,
+                pollInterval: 100
+            }
+        });
+
+        this.setupWatcherEvents();
+        this.startIdleCheck();
+        this.logInfo('File monitoring started');
+    }
+
+    setupWatcherEvents() {
+        // Debounced change handler
+        const handleChange = debounce(async (filePath) => {
+            await this.handleFileChange(filePath);
+        }, this.config.debounceTime);
+
+        // Event listeners
+        this.watcher
+            .on('change', handleChange)
+            .on('add', filePath => this.logInfo(`File added: ${filePath}`))
+            .on('unlink', filePath => this.logInfo(`File removed: ${filePath}`))
+            .on('error', error => this.logError('Watcher error', error));
+
+        // Monitor config file changes
+        const configWatcher = chokidar.watch(this.configPath);
+        configWatcher.on('change', debounce(async () => {
+            this.logInfo('Configuration file changed, reloading...');
+            await this.loadConfigurations();
+        }, CONFIG.DEBOUNCE_TIME));
+    }
+
+    async handleFileChange(filePath) {
+        try {
+            this.isIdle = false;
+            const relativePath = path.relative(process.cwd(), filePath);
+            this.logInfo(`File changed: ${relativePath}`);
+
+            // Get Git changes
+            const gitChanges = await this.getGitChanges();
+            if (gitChanges.length > 0) {
+                this.logInfo(`Git changes detected: ${gitChanges.join(', ')}`);
+            }
+
+            // Process related files
+            const relatedFiles = this.findRelatedFiles(relativePath);
+            if (relatedFiles.length > 0) {
+                this.logInfo('Related files that may need attention:');
+                relatedFiles.forEach(file => {
+                    console.log(chalk.yellow(`  → ${file}`));
+                });
+            }
+
+            this.isIdle = true;
+        } catch (error) {
+            this.logError('Error processing file change', error);
+            this.isIdle = true;
+        }
+    }
+
+    async getGitChanges() {
+        try {
+            const { stdout } = await execAsync('git diff --name-only');
+            return stdout.split('\n').filter(Boolean);
+        } catch (error) {
+            this.logError('Failed to get git changes', error);
+            return [];
+        }
+    }
+
+    findRelatedFiles(changedFile) {
+        const relatedFiles = new Set();
+        const relationalMap = this.config.relationalMap;
+
+        // Direct dependencies
+        if (relationalMap[changedFile]) {
+            relationalMap[changedFile].forEach(file => relatedFiles.add(file));
+        }
+
+        // Reverse dependencies (files that depend on the changed file)
+        Object.entries(relationalMap).forEach(([source, targets]) => {
+            targets.forEach(target => {
+                if (this.matchesPattern(changedFile, target)) {
+                    relatedFiles.add(source);
+                }
+            });
+        });
+
+        return Array.from(relatedFiles);
+    }
+
+    matchesPattern(filePath, pattern) {
+        if (pattern.includes('*')) {
+            const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+            return regex.test(filePath);
+        }
+        return filePath === pattern;
+    }
+
+    startIdleCheck() {
+        setInterval(() => {
+            if (this.isIdle) {
+                this.logDebug('System idle, monitoring for changes...');
+            }
+        }, CONFIG.STATUS_CHECK_INTERVAL);
+    }
+}
+
+// Start the monitoring system
 try {
-  console.log(chalk.cyan('Starting file monitoring system...'));
-  monitorFiles();
-  monitorConfigFile();
-} catch (err) {
-  console.error(chalk.red(`Fatal error: ${err.message}`));
-  process.exit(1);
+    console.log(chalk.bold.cyan('Starting Context Sync Tool...'));
+    new FileMonitor();
+} catch (error) {
+    console.error(chalk.red('Fatal error:', error.message));
+    process.exit(1);
 }

@@ -6,165 +6,390 @@ This guide provides detailed instructions for maintaining and troubleshooting th
 
 The tool is designed to be adaptable, globally maintainable, and user-friendly, with a focus on minimizing manual intervention and ensuring seamless operation.
 
----
+## System Requirements
+
+- Node.js v16 or higher
+- pnpm package manager
+- Git installed and configured
+- Sufficient file system permissions
 
 ## Key Components
 
 1. **Git Diff Relational Context**:
-
-   - Tracks changes in version-controlled files.
-   - Dynamically includes related files based on a predefined relational map.
+   - Tracks changes in version-controlled files
+   - Dynamically includes related files based on config.json5
+   - Uses debounce protection for efficient processing
 
 2. **File Monitoring**:
+   - Real-time file change detection with chokidar
+   - Smart pattern matching with glob support
+   - Configurable ignore patterns
 
-   - Tracks changes to non-version-controlled files in real time.
-   - Includes relevant updates to ensure complete context generation.
+3. **Configuration System**:
+   - JSON5-based configuration for enhanced readability
+   - Hot-reload support for configuration changes
+   - Framework-independent integration
+   - Debug mode for detailed logging
 
-3. **Unified Context Generator**:
-
-   - Combines outputs from Git Diffs and file monitoring.
-   - Produces a single context file for AI model interaction.
-
-4. **Configuration Layer**:
-
-   - Ensures compatibility with various AI models (e.g., Claude, ChatGPT).
-   - Facilitates framework-independent integration.
-
----
+4. **Performance Optimization**:
+   - Efficient file watching with debouncing
+   - Optimized git diff execution
+   - Smart caching and pattern matching
 
 ## Maintenance Tasks
 
-### 1. Updating the Relational Map
+### 1. Configuration Management
 
-**Purpose**: Keep the relational map up to date as new dependencies or files are introduced.
-
-#### Steps:
-
-1. Open the `relational_map.json` file in the `Configuration` folder.
-2. Add or modify file relationships as needed.
-3. Save the changes and test the mapping using the following command:
-   ```bash
-   pnpm map-relations
+#### Updating the Configuration
+1. Navigate to `Configuration/config.json5`
+2. Modify settings as needed:
+   ```json5
+   {
+     "watchAllFiles": false,
+     "debugMode": true,
+     "debounceTime": 300,
+     "watchDirectories": [
+       "./src/**/*"
+     ]
+   }
    ```
+3. Save changes - the tool will automatically reload
 
-#### Best Practices:
+#### Best Practices
+- Keep backup of working configurations
+- Document custom changes
+- Use version control for configurations
+- Regularly review and clean up patterns
 
-- Regularly review the map during significant project updates.
-- Use meaningful patterns to avoid unnecessary inclusions.
+### 2. System Health Monitoring
 
-### 2. Monitoring System Health
-
-**Purpose**: Ensure the file monitoring system is running smoothly.
-
-#### Steps:
-
-1. Verify that the file watcher is active:
+#### Regular Checks
+1. Verify active monitoring:
    ```bash
-   pnpm monitor-status
+   pnpm run monitor
    ```
-2. Restart the monitoring service if needed:
-   ```bash
-   pnpm restart-monitor
-   ```
-3. Check the log files in `Administrative_Actions/Logs` for any errors.
+2. Check system resources:
+   - Monitor memory usage
+   - Track CPU utilization
+   - Review disk space for logs
 
-#### Common Issues:
+#### Log Management
+- Monitor log files for errors
+- Implement log rotation if needed
+- Clean up old logs periodically
 
-- **Symptom**: File changes are not being detected.
-  - **Solution**: Ensure the watcher includes the correct file paths and extensions in its configuration.
-- **Symptom**: High resource usage.
-  - **Solution**: Optimize the inclusion/exclusion rules in the monitoring script.
+### 3. Performance Optimization
 
-### 3. Validating Context Output
+#### Watch Pattern Optimization
+```json5
+{
+  "ignoredPatterns": [
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/dist/**"
+  ],
+  "watchDirectories": [
+    "./src/**/*.{js,tsx,jsx}",
+    "./config/*.json"
+  ]
+}
+```
 
-**Purpose**: Ensure the generated context file is accurate and within size limits.
-
-#### Steps:
-
-1. Generate the context file manually:
-   ```bash
-   pnpm sync-context
-   ```
-2. Open and review the `context-for-claude.txt` file in the `Administrative_Actions/Context_Syncing` folder.
-3. Check for missing or redundant data.
-
-#### Best Practices:
-
-- Regularly test the context output after significant changes.
-- Use the context size checker tool:
-  ```bash
-  pnpm check-context-size
-  ```
-
----
+#### Resource Usage
+- Adjust debounce time based on system performance
+- Optimize file watch patterns
+- Use specific glob patterns
 
 ## Troubleshooting
 
-### Common Issues and Fixes
+### Common Issues and Solutions
 
-#### 1. **Relational Files Missing from Context**
+#### 1. JSON5 Parsing Errors
 
-- **Cause**: Missing or outdated entries in the relational map.
-- **Solution**:
-  1. Update the relational map in `relational_map.json`.
-  2. Run the mapping verification tool:
-     ```bash
-     pnpm verify-relations
-     ```
+**Symptom**: Configuration file parsing errors
+```
+Failed to parse configuration file: invalid character '#' at 1:1
+```
 
-#### 2. **File Monitoring Service Fails to Start**
+**Solutions**:
+1. Check JSON5 syntax:
+   - Remove markdown-style comments (#)
+   - Use JSON5 comments (//)
+   - Verify proper object structure
+2. Example of correct format:
+   ```json5
+   // Configuration file
+   {
+     // Watch settings
+     "watchAllFiles": true,
+     /* Multiple line
+        comments are okay too */
+     "debounceTime": 300
+   }
+   ```
 
-- **Cause**: Incorrect configuration or missing dependencies.
-- **Solution**:
-  1. Check the monitoring logs for errors.
-  2. Reinstall dependencies:
-     ```bash
-     pnpm install
-     ```
-  3. Restart the service:
-     ```bash
-     pnpm restart-monitor
-     ```
+#### 2. Relational Map Issues
 
-#### 3. **Context File Exceeds AI Model Limits**
+**Symptom**: Related files not being detected
 
-- **Cause**: Excessive data inclusion from Git Diffs or file monitoring.
-- **Solution**:
-  1. Review the context file for redundant data.
-  2. Update inclusion/exclusion rules in the monitoring script.
-  3. Use summarization or filtering tools:
-     ```bash
-     pnpm summarize-context
-     ```
+**Solutions**:
+1. Verify map structure:
+   ```json5
+   {
+     "src/components/sidebar.tsx": [
+       "src/layout.tsx",
+       "src/app.tsx"
+     ]
+   }
+   ```
+2. Check path formatting:
+   - Use forward slashes (/)
+   - Use relative paths from project root
+   - Verify glob patterns
 
-#### 4. **Inconsistent Behavior Between AI Models**
+#### 3. File Path Resolution Issues
 
-- **Cause**: Model-specific configuration mismatches.
-- **Solution**:
-  1. Review the configuration file in the `Configuration` folder.
-  2. Update parameters for the target model (e.g., token limits, formatting).
+#### 1. Module Import Errors
 
----
+**Symptom**: Named export errors
+```
+SyntaxError: Named export not found
+```
+
+**Solutions**:
+1. Check dependencies:
+   ```bash
+   pnpm install
+   ```
+2. Verify import syntax:
+   ```javascript
+   // Correct
+   import lodash from 'lodash';
+   const { debounce } = lodash;
+   ```
+
+#### 2. File Monitoring Issues
+
+**Symptom**: Missing file changes or excessive CPU usage
+
+**Solutions**:
+1. Check configuration:
+   - Verify paths
+   - Review ignore patterns
+   - Update watch directories
+2. Adjust debounce settings:
+   ```json5
+   {
+     "debounceTime": 500  // Increase for stability
+   }
+   ```
+
+#### 3. Git Integration Problems
+
+**Symptom**: Git diff errors or missing changes
+
+**Solutions**:
+1. Verify git setup:
+   ```bash
+   git --version
+   git status
+   ```
+2. Check repository configuration:
+   ```bash
+   git config --list
+   ```
+3. Ensure proper branch setup:
+   ```bash
+   git branch --list
+   ```
+
+#### 4. Performance Issues
+
+**Symptom**: Slow response or high resource usage
+
+**Solutions**:
+1. Enable debug mode for analysis:
+   ```json5
+   {
+     "debugMode": true
+   }
+   ```
+2. Optimize watch patterns
+3. Increase debounce time
+4. Review ignored patterns
+
+### Debug Mode
+
+Enable detailed logging:
+```json5
+{
+  "debugMode": true,
+  "logLevel": "verbose"
+}
+```
+
+Console output colors:
+- 🟢 Green: Normal operations
+- 🔵 Blue: Debug information
+- 🟡 Yellow: Warnings
+- 🔴 Red: Errors
+
+### Recovery Procedures
+
+1. **Configuration Reset**
+   ```bash
+   rm Configuration/config.json5
+   # Restart tool - creates new config
+   pnpm run monitor
+   ```
+
+2. **Clean Installation**
+   ```bash
+   rm -rf node_modules
+   pnpm install
+   ```
+
+3. **Emergency Shutdown**
+   - Use Ctrl+C to stop the process
+   - Check for hanging processes
+   - Clear temporary files
 
 ## Advanced Topics
 
-### 1. Cross-Platform Compatibility
+### Cross-Platform Compatibility
+- Use platform-agnostic paths
+- Test on multiple operating systems
+- Handle path separators correctly
 
-- **Issue**: Some scripts or dependencies might not work as expected on all platforms.
-- **Solution**:
-  - Use platform-agnostic tools wherever possible.
-  - Test scripts on all supported platforms (e.g., Windows, macOS, Linux).
+### Large Project Optimization
+- Use specific watch patterns
+- Implement chunking for large files
+- Optimize relational mapping
 
-### 2. Scaling for Large Projects
+### Additional Troubleshooting Scenarios
 
-- **Issue**: Relational mapping and file monitoring may slow down with large codebases.
-- **Solution**:
-  - Optimize mapping rules to avoid unnecessary inclusions.
-  - Use chunking for large files to split data into manageable parts.
+#### Memory Leaks and Resource Issues
 
----
+**Symptom**: Increasing memory usage over time
+
+**Solutions**:
+1. Check for unclosed file watchers:
+   ```javascript
+   // Proper watcher cleanup
+   process.on('SIGINT', () => {
+     watcher.close();
+     process.exit(0);
+   });
+   ```
+2. Monitor resource usage:
+   ```bash
+   # On Linux
+   top -p $(pgrep -f file_monitoring)
+   
+   # On Windows
+   tasklist | findstr "node"
+   ```
+3. Implement periodic restart schedule if needed
+
+#### Windows-Specific Path Issues
+
+**Symptom**: Path resolution failures on Windows
+
+**Solutions**:
+1. Use path normalization:
+   ```javascript
+   const normalizedPath = path.normalize(filePath).replace(/\\/g, '/');
+   ```
+2. Check path format in config:
+   ```json5
+   {
+     "watchDirectories": [
+       "./src/**/*",  // Good
+       "C:\\src\\**", // Bad
+       "C:/src/**"    // Good
+     ]
+   }
+   ```
+
+#### Multiple Instance Conflicts
+
+**Symptom**: Tool behaving erratically or port conflicts
+
+**Solutions**:
+1. Check for running instances:
+   ```bash
+   # On Linux
+   ps aux | grep file_monitoring
+   
+   # On Windows
+   tasklist | findstr "node"
+   ```
+2. Implement instance locking:
+   - Create lock file on startup
+   - Check for existing lock
+   - Clean up lock on shutdown
+
+#### VSCode Integration Issues
+
+**Symptom**: File changes not detected when saving in VSCode
+
+**Solutions**:
+1. Check VSCode settings:
+   ```json
+   {
+     "files.autoSave": "off",
+     "files.useExperimentalFileWatcher": true
+   }
+   ```
+2. Verify file permissions
+3. Check VSCode's built-in git integration
+
+#### Network Drive Issues
+
+**Symptom**: Slow response or missed events on network drives
+
+**Solutions**:
+1. Adjust polling settings:
+   ```json5
+   {
+     "usePolling": true,
+     "pollingInterval": 1000
+   }
+   ```
+2. Use local cache directory
+3. Implement retry mechanism for network failures
+
+#### Tool Hanging on Exit
+
+**Symptom**: Process doesn't exit cleanly
+
+**Solutions**:
+1. Implement proper shutdown:
+   ```javascript
+   const cleanup = () => {
+     watcher.close();
+     closeLogFiles();
+     clearCache();
+   };
+   
+   process.on('SIGINT', cleanup);
+   process.on('SIGTERM', cleanup);
+   ```
+2. Check for hanging file handles
+3. Implement timeout-based force exit
 
 ## Support
 
-For additional support, contact the project maintainer or refer to the community discussion board.
+For additional support:
+1. Check GitHub Issues
+2. Review documentation in /docs
+3. Contact maintainers for serious issues
 
+Remember to include when reporting issues:
+- Full error messages
+- Configuration file (sanitized)
+- Steps to reproduce
+- System information
+  - Node.js version
+  - Operating system
+  - Package versions
