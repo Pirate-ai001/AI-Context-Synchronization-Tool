@@ -4,7 +4,7 @@
 The **Context Sync Tool** is a file monitoring utility designed to track & monitor changes within a project directory, execute Git diffs and log the status of any changes detected in files. It integrates seamlessly into your main project and provides live feedback on the status of file changes while tracking whether the system is idle or active. This tool is useful for syncing context in development environments with AI Chatbots (eg. Claude, ChatGPT etc) and tracking any updates that occur across a corresponding local folder &/or Git Repository.
 
 ## Features
-- **Intelligent File Monitoring**: Advanced file system monitoring with debouncing and stability thresholds
+- **Performance Optimized Intelligent File Monitoring**: Advanced file system monitoring with debouncing, stability thresholds & caching
 - **Relational Map Support**: Track interdependencies between files using a flexible mapping system
 - **Git Integration**: Utilizes git diff to track changes effectively
 - **Smart Status Logging**: Shows detailed git status including added, modified, and deleted files
@@ -12,8 +12,21 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
 - **Dynamic Configuration**: JSON5-based configuration with hot-reload support
 - **Pattern Matching**: Support for glob patterns in file matching
 - **Debug Mode**: Optional detailed logging for troubleshooting
-- **Performance Optimized**: Efficient file watching with debouncing and caching
 - **Idle Status Tracking**: Monitors and reports system idle state
+
+#### Key Features of Related Files Tracking:
+- Supports precise file path matching
+- Implements advanced glob-style pattern recognition
+- Automatically removes duplicate related file entries
+- Provides comprehensive debug logging of file relationships
+- Enables flexible configuration for complex project structures
+
+#### How Related Files Work
+When a file is modified:
+1. The tool instantly checks for exact file matches in the relational map
+2. Applies sophisticated glob pattern matching to discover related files
+3. Generates detailed debug logs about discovered file relationships
+4. Can trigger context updates or notifications for interconnected files
 
 ## Working with Claude
 
@@ -67,7 +80,7 @@ Before installing the Context Sync Tool, ensure you have:
 
 2. **pnpm**
    - Latest version recommended
-   - Install via npm: `npm install -g pnpm`
+   - Install via npm: `npm install -g pnpm` or `npm install pnpm --save-dev`
 
 3. **Git**
    - Required for version control features
@@ -146,7 +159,83 @@ To enable git functionality:
    git init
    git add .
    git commit -m "Initial commit"
+
    ```
+   ## Usage
+
+### Starting the Monitor
+Run the tool using:
+```bash
+pnpm run monitor
+```
+
+### Understanding the Output
+The tool uses color-coded console output:
+- 🟢 **Green**: Information and success messages
+- 🔵 **Blue**: Debug information (when debug mode is enabled)
+- 🟡 **Yellow**: Warnings and modified files
+- 🔴 **Red**: Errors and deleted files
+
+### Git Diff Integration
+The tool executes the following Git diff command to detect changes:
+```bash
+git diff --name-only
+```
+This command returns the list of files that have been modified, added, or removed in the repository.
+
+### Idle Status
+If no changes are detected for 5 minutes, the tool will log an idle status indicating that it is monitoring for changes but no activity is being processed.
+
+### Monitoring Modes
+1. **Watch All Files Mode**:
+   - Set `watchAllFiles: true` in config
+   - Monitors all files except ignored patterns
+
+2. **Relational Map Mode**:
+   - Set `watchAllFiles: false` in config
+   - Only monitors files specified in the relational map
+   - Uses glob pattern matching for file relationships
+
+## Understanding the Dummy Project
+
+### What is the Dummy Project?
+The dummy project is a pre-configured example project included with the tool that serves multiple purposes:
+
+1. **Learning Environment**: 
+   - Demonstrates how the tool works in a real project structure
+   - Shows correct configuration setup
+   - Provides working examples of file relationships
+
+2. **Testing Ground**:
+   - Allows you to test the tool without risking your own project
+   - Includes common file types and structures
+   - Demonstrates proper gitignore patterns
+
+3. **Configuration Template**:
+   - Contains pre-configured settings you can reference
+   - Shows how to set up file relationships
+   - Provides examples of ignore patterns
+
+### How to Use the Dummy Project
+
+1. **Initial Testing**:
+   ```bash
+   # Start the tool with dummy project
+   pnpm run monitor
+   ```
+   - Make changes to dummy project files
+   - Observe how the tool tracks relationships
+   - Experiment with different file types
+
+2. **Learning from Examples**:
+   - Review the dummy project's structure
+   - Understand the configuration patterns
+   - See how file relationships are defined
+
+3. **Adapting to Your Project**:
+   - Use dummy project as a template
+   - Copy and modify configurations
+   - Adjust paths and patterns for your needs
 
 ### Advanced Configuration
 Experienced users can adjust these additional settings:
@@ -205,48 +294,6 @@ Experienced users can adjust these additional settings:
    # - File watching status
    # - Any error messages
    ```
-
-## Understanding the Dummy Project
-
-### What is the Dummy Project?
-The dummy project is a pre-configured example project included with the tool that serves multiple purposes:
-
-1. **Learning Environment**: 
-   - Demonstrates how the tool works in a real project structure
-   - Shows correct configuration setup
-   - Provides working examples of file relationships
-
-2. **Testing Ground**:
-   - Allows you to test the tool without risking your own project
-   - Includes common file types and structures
-   - Demonstrates proper gitignore patterns
-
-3. **Configuration Template**:
-   - Contains pre-configured settings you can reference
-   - Shows how to set up file relationships
-   - Provides examples of ignore patterns
-
-### How to Use the Dummy Project
-
-1. **Initial Testing**:
-   ```bash
-   # Start the tool with dummy project
-   pnpm run monitor
-   ```
-   - Make changes to dummy project files
-   - Observe how the tool tracks relationships
-   - Experiment with different file types
-
-2. **Learning from Examples**:
-   - Review the dummy project's structure
-   - Understand the configuration patterns
-   - See how file relationships are defined
-
-3. **Adapting to Your Project**:
-   - Use dummy project as a template
-   - Copy and modify configurations
-   - Adjust paths and patterns for your needs
-
 
 #### Template Customization
 You can customize how context is presented to AI models:
@@ -317,23 +364,6 @@ If Claude seems to misunderstand the context:
 3. Enable debug mode for detailed logging
 4. Review template configuration
 5. Check relationship mappings
-
-## Project Structure
-```
-Context_Sync_Tool/
-├── Configuration/
-│   └── config.json5         # Main configuration file
-├── docs/
-│   ├── README.md           # Documentation
-│   └── LICENSE.txt         # License information
-├── scripts/
-│   └── file_monitoring.js  # Main monitoring script
-├── dummy-project/          # Example project for testing
-│   ├── src/               # Example source files
-│   └── .gitignore         # Project-specific ignores
-├── .gitignore             # Tool-specific ignores
-└── package.json           # Dependencies and scripts
-```
 
 ## Configuration
 
@@ -419,20 +449,6 @@ Use wildcard patterns to match multiple files dynamically:
 }
 ```
 
-#### Key Features of Related Files Tracking:
-- Supports precise file path matching
-- Implements advanced glob-style pattern recognition
-- Automatically removes duplicate related file entries
-- Provides comprehensive debug logging of file relationships
-- Enables flexible configuration for complex project structures
-
-#### How Related Files Work
-When a file is modified:
-1. The tool instantly checks for exact file matches in the relational map
-2. Applies sophisticated glob pattern matching to discover related files
-3. Generates detailed debug logs about discovered file relationships
-4. Can trigger context updates or notifications for interconnected files
-
 **Tip**: Enable `debugMode: true` in the configuration to receive detailed insights about file relationship detection and matching processes.
 
 ## Gitignore Files
@@ -447,41 +463,23 @@ The tool uses two separate .gitignore files:
    - Used by the monitoring functionality
    - Determines which files to exclude from monitoring
    - Can be customized for specific projects
-
-## Usage
-
-### Starting the Monitor
-Run the tool using:
-```bash
-pnpm run monitor
+   
+   ## Project Structure
 ```
-
-### Understanding the Output
-The tool uses color-coded console output:
-- 🟢 **Green**: Information and success messages
-- 🔵 **Blue**: Debug information (when debug mode is enabled)
-- 🟡 **Yellow**: Warnings and modified files
-- 🔴 **Red**: Errors and deleted files
-
-### Git Diff Integration
-The tool executes the following Git diff command to detect changes:
-```bash
-git diff --name-only
+Context_Sync_Tool/
+├── Configuration/
+│   └── config.json5         # Main configuration file
+├── docs/
+│   ├── README.md           # Documentation
+│   └── LICENSE.txt         # License information
+├── scripts/
+│   └── file_monitoring.js  # Main monitoring script
+├── dummy-project/          # Example project for testing
+│   ├── src/               # Example source files
+│   └── .gitignore         # Project-specific ignores
+├── .gitignore             # Tool-specific ignores
+└── package.json           # Dependencies and scripts
 ```
-This command returns the list of files that have been modified, added, or removed in the repository.
-
-### Idle Status
-If no changes are detected for 5 minutes, the tool will log an idle status indicating that it is monitoring for changes but no activity is being processed.
-
-### Monitoring Modes
-1. **Watch All Files Mode**:
-   - Set `watchAllFiles: true` in config
-   - Monitors all files except ignored patterns
-
-2. **Relational Map Mode**:
-   - Set `watchAllFiles: false` in config
-   - Only monitors files specified in the relational map
-   - Uses glob pattern matching for file relationships
 
 ### Debug Mode
 Enable debug mode in config.json5 to see detailed logging:
