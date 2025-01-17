@@ -15,6 +15,27 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
 - **Performance Optimized**: Efficient file watching with debouncing and caching
 - **Idle Status Tracking**: Monitors and reports system idle state
 
+## Prerequisites
+
+Before installing the Context Sync Tool, ensure you have:
+
+1. **Node.js**
+   - Version 16.0.0 or higher
+   - Download from [nodejs.org](https://nodejs.org)
+
+2. **pnpm**
+   - Latest version recommended
+   - Install via npm: `npm install -g pnpm`
+
+3. **Git**
+   - Required for version control features
+   - Download from [git-scm.com](https://git-scm.com)
+
+4. **System Requirements**
+   - Operating System: Windows, macOS, or Linux
+   - Sufficient disk space for monitored projects
+   - Read/write permissions in installation directory
+
 ## Installation
 
 1. Clone the repository:
@@ -36,7 +57,7 @@ The **Context Sync Tool** is a file monitoring utility designed to track & monit
     ```bash
     pnpm run monitor
     ```
-
+	
 ## Understanding the Dummy Project
 
 ### What is the Dummy Project?
