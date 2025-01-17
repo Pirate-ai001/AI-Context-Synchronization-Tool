@@ -106,7 +106,6 @@ Before installing the Context Sync Tool, ensure you have:
 After installation, you'll need to configure the tool. By default, git functionality is disabled and needs to be explicitly configured:
 
 1. **Basic Configuration**
-Basic Configuration
 After installation, you need modify your configuration files unless your testing the dummy project which is preconfigured:
 
 e.g. C:\users\admin\desktop\Context_Sync_Tool\Configuration\config.json5 (it is preconfigured with basic settings that apply to the dummy project)
