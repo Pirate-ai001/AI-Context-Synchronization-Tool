@@ -2,15 +2,15 @@
 {
   // Main watch settings
   watchAllFiles: true,
-  debugMode: false,
+  debugMode: true,  // Changed to true for debugging
   debounceTime: 300,
 
   // Git configuration
   gitConfig: {
-    enabled: true,
-    repositoryPath: "path/to/your/repo",
-    branch: "main",
-    showGitStatus: true
+    enabled: false,  // Disabled git functionality
+    repositoryPath: "",
+    branch: "",
+    showGitStatus: false
   },
 
   // Patterns to ignore
@@ -22,6 +22,9 @@
 
   // Watch directories
   watchDirectories: [
+    "./dummy_project/**",          // Watch the dummy_project directory itself
+    "./dummy_project/**/*",        // Watch all files in dummy_project
+    "./dummy_project/**/**/*",     // Watch all subdirectories and their files
     "./src/**/*"
   ],
 
