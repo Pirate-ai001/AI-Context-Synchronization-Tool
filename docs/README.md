@@ -106,29 +106,18 @@ Before installing the Context Sync Tool, ensure you have:
 After installation, you'll need to configure the tool. By default, git functionality is disabled and needs to be explicitly configured:
 
 1. **Basic Configuration**
-   ```bash
-   # Navigate to Configuration directory
-   cd Configuration
-   # Copy the default config if it doesn't exist
-   cp config.template.json5 config.json5
-   ```
+Basic Configuration
+After installation, you need modify your configuration files unless your testing the dummy project which is preconfigured:
+
+e.g. C:\users\admin\desktop\Context_Sync_Tool\Configuration\config.json5 (it is preconfigured with basic settings that apply to the dummy project)
 
 2. **Minimum Required Settings**
    ```json5
    {
      // Enable file watching
      watchAllFiles: true,
-     
-     // Git configuration (required for git features)
-     gitConfig: {
-       enabled: false,  // Set to true to enable git features
-       repositoryPath: "",  // Must be set if git is enabled
-       branch: "main",
-       showGitStatus: true
-     }
-   }
-   ```
-
+     ```
+	 
 ### Setting Up Git Integration
 To enable git functionality:
 
