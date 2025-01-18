@@ -452,7 +452,7 @@ Use wildcard patterns to match multiple files dynamically:
 **Tip**: Enable `debugMode: true` in the configuration to receive detailed insights about file relationship detection and matching processes.
 
 ## Gitignore Files
-The tool uses two separate .gitignore files:
+The tool uses separate .gitignore files:
 
 1. **Tool's .gitignore** (`/Context_Sync_Tool/.gitignore`):
    - Manages version control for the tool itself
